@@ -1,9 +1,9 @@
 <?php
 // Require PHP 7.2+
-require __DIR__.'/../SQVar.php';
-require __DIR__.'/../SQLiteMan/funcList.php';
-require __DIR__.'/../SQLiteMan/Exception.php';
-require __DIR__.'/../SQLiteMan/Manager.php';
+require __DIR__.'/../src/SQVar.php';
+require __DIR__.'/../src/SQLiteMan/funcList.php';
+require __DIR__.'/../src/SQLiteMan/Exception.php';
+require __DIR__.'/../src/SQLiteMan/Manager.php';
 
 $dsnLite='sqlite:'.__DIR__.'/test.db';
 try{

@@ -2,7 +2,7 @@
 
 namespace SQLiteMan;
 
-use \SQVar;
+use SQVar;
 
 /**
  * <b>IMPORTANTE:</b>

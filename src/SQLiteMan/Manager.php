@@ -4,7 +4,7 @@ namespace SQLiteMan;
 
 use PDO;
 use PDOStatement;
-use \SQVar;
+use SQVar;
 
 /**
  * #SQLite Manager
