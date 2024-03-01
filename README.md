@@ -17,11 +17,11 @@ PHP 7.1+, PHP 8.0+
 
 # Clases necesarias
 
-Solo es necesario incluir la clase [SQVar](SQVar.php) y la carpeta de clases según del driver a utilizar:
-- Carpeta de [SQLite](SQLiteMan)
-  - Clase Principal: [SQLiteMan\Manager](SQLiteMan/Manager.php)
-- Carpeta de [MySQL](MySQLMan)
-  - Clase Principal: [MySQLMan\Manager](MySQLMan/Manager.php)
+Solo es necesario incluir la clase [SQVar](src/SQVar.php) y la carpeta de clases según del driver a utilizar:
+- Carpeta de [SQLite](src/SQLiteMan)
+  - Clase Principal: [SQLiteMan\Manager](src/SQLiteMan/Manager.php)
+- Carpeta de [MySQL](src/MySQLMan)
+  - Clase Principal: [MySQLMan\Manager](src/MySQLMan/Manager.php)
 
 # Compatibilidad del driver/servidor
 
