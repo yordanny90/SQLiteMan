@@ -6,8 +6,6 @@ use Exception;
 use PDO;
 
 /**
- * #MySQL Manager
- *
  * Repositorio {@link https://github.com/yordanny90/SQLManager}
  */
 abstract class ManagerBase{

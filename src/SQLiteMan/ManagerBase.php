@@ -2,11 +2,9 @@
 
 namespace SQLiteMan;
 
-use SQVar;
+use SQData;
 
 /**
- * #SQLite Manager Base
- *
  * Repositorio {@link https://github.com/yordanny90/SQLManager}
  */
 abstract class ManagerBase{
@@ -131,15 +129,15 @@ abstract class ManagerBase{
         ];
         if(!is_array($colDef)) $colDef=[];
         $def=$this->name_($colName);
-        if(is_string($colDef['type'])) $def.=' '.$this->value($colDef['type']);
-        if($colDef['notnull'] ?? false) $def.=' NOT NULL';
-        if($colDef['unique'] ?? false) $def.=' UNIQUE';
+        if(isset($colDef['type'])) $def.=' '.$this->value($colDef['type']);
+        if(($colDef['notnull'] ?? false)) $def.=' NOT NULL';
+        if(($colDef['unique'] ?? false)) $def.=' UNIQUE';
 
         if(isset($colDef['default'])) $def.=' DEFAULT '.$this->value($colDef['default']);
-        elseif(is_string($colDef['defaultExpr'] ?? null)) $def.=' DEFAULT ('.$colDef['defaultExpr'].')';
+        elseif(isset($colDef['defaultExpr'])) $def.=' DEFAULT ('.$colDef['defaultExpr'].')';
 
-        if(is_string($colDef['stored'] ?? null)) $def.=' AS ('.$colDef['stored'].') STORED';
-        elseif(is_string($colDef['virtual'] ?? null)) $def.=' AS ('.$colDef['virtual'].') VIRTUAL';
+        if(isset($colDef['stored'])) $def.=' AS ('.$colDef['stored'].') STORED';
+        elseif(isset($colDef['virtual'])) $def.=' AS ('.$colDef['virtual'].') VIRTUAL';
 
         if(($colDef['pk'] ?? false) && ($colDef['ai'] ?? false)) $def.=' PRIMARY KEY AUTOINCREMENT';
         return $def;
@@ -286,7 +284,7 @@ abstract class ManagerBase{
     }
 
     protected function sql($sql){
-        if(is_a($sql, SQVar::class)) return $this->SQVar($sql);
+        if(is_a($sql, SQData::class)) return $this->SQData($sql);
         return strval($sql);
     }
 
@@ -304,11 +302,11 @@ abstract class ManagerBase{
 
     /**
      * Escapa el nombre o nombres indicados
-     * @param string|SQVar $name
+     * @param string|SQData $name
      * @return string
      */
     public function name($name){
-        if(is_a($name, SQVar::class)) return $this->SQVar($name);
+        if(is_a($name, SQData::class)) return $this->SQData($name);
         return $this->name_($name);
     }
 
@@ -335,7 +333,7 @@ abstract class ManagerBase{
      *
      * ## CUIDADO: Este método no es seguro para datos desconocidos.
      * ###Si el origen del nombre es externo al código (como variables POST, GET, HEADERS, etc), debe utilizar primero la función {@see Esc::escapeName()} sobre esos valores
-     * @param string|array|SQVar $name
+     * @param string|array|SQData $name
      * @return string
      */
     public function nameVar($name){
@@ -386,11 +384,11 @@ abstract class ManagerBase{
     }
 
     /**
-     * @param null|scalar|SQVar $value
+     * @param null|scalar|SQData $value
      * @return bool|string
      */
     public function value($value){
-        if(is_a($value, SQVar::class)) return $this->SQVar($value);
+        if(is_a($value, SQData::class)) return $this->SQData($value);
         if($value===null) return 'NULL';
         if(is_bool($value)) return $value?'1':'0';
         if(is_int($value)||is_float($value)) return strval($value);
@@ -403,39 +401,39 @@ abstract class ManagerBase{
     }
 
     /**
-     * @param SQVar $value
+     * @param SQData $value
      * @return bool|string|null
      */
-    public function SQVar(SQVar $value){
-        if($value->getType()===SQVar::TYPE_SQL){
+    public function SQData(SQData $value){
+        if($value->getType()===SQData::TYPE_SQL){
             return $value->getData();
         }
-        elseif($value->getType()===SQVar::TYPE_VALUE){
+        elseif($value->getType()===SQData::TYPE_VALUE){
             return $this->value($value->getData());
         }
-        elseif($value->getType()===SQVar::TYPE_NAME){
+        elseif($value->getType()===SQData::TYPE_NAME){
             return $this->name($value->getData());
         }
         return "";
     }
 
     /**
-     * @param SQVar ...$value
+     * @param SQData ...$value
      * @return string
      */
-    public function SQVars(SQVar ...$value){
-        $sql=implode(',', array_map([$this, 'SQVar'], $value));
+    public function SQDataList(SQData ...$value){
+        $sql=implode(',', array_map([$this, 'SQData'], $value));
         return $sql;
     }
 
     public function fn($name, ...$params){
         $sql=$name.'('.$this->nameVarList($params, false).')';
-        return $sql;
+        return SQData::s($sql);
     }
 
     public function fn_val($name, ...$params){
         $sql=$name.'('.$this->values($params).')';
-        return $sql;
+        return SQData::s($sql);
     }
 
     public function selectValues_sql(array ...$values){
@@ -455,7 +453,7 @@ abstract class ManagerBase{
         foreach($list as $name=>$var){
             if($first) $first=false;
             else $sql.=",\n";
-            if(!is_string($name) && is_a($var, SQVar::class)) $sql.=$this->SQVar($var);
+            if(!is_string($name) && is_a($var, SQData::class)) $sql.=$this->SQData($var);
             else $sql.=$this->nameVar($name).'='.$this->value($var);
         }
         return $sql;

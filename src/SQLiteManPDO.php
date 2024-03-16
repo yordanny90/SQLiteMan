@@ -4,8 +4,6 @@ use SQLiteMan\Functions;
 use SQLiteMan\ManagerBase;
 
 /**
- * #SQLite Manager
- *
  * Repositorio {@link https://github.com/yordanny90/SQLManager}
  */
 class SQLiteManPDO extends ManagerBase{
@@ -32,11 +30,10 @@ class SQLiteManPDO extends ManagerBase{
     }
 
     protected function quoteVal(string $value): string{
-        $type=PDO::PARAM_STR;
         if(strpos($value, "\0")!==false){
             return 'x'.$this->conn->quote(bin2hex($value));
         }
-        return $this->conn->quote($value, $type);
+        return $this->conn->quote($value);
     }
 
     public function exec(string $sql): bool{

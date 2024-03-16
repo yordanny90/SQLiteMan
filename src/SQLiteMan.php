@@ -4,8 +4,6 @@ use SQLiteMan\Functions;
 use SQLiteMan\ManagerBase;
 
 /**
- * #SQLite Manager SQLite
- *
  * Repositorio {@link https://github.com/yordanny90/SQLManager}
  */
 class SQLiteMan extends ManagerBase{
@@ -37,15 +35,11 @@ class SQLiteMan extends ManagerBase{
         $this->fetchMode=$mode;
     }
 
-    private $stmt_escape;
     protected function quoteVal(string $value): string{
-        if(!$this->stmt_escape) $this->stmt_escape=$this->conn()->prepare('SELECT :a');
-        $type=SQLITE3_TEXT;
-        if(strpos($value, "\0")!==false) $type=SQLITE3_BLOB;
-        $this->stmt_escape->bindValue(':a',$value,$type);
-        $s=substr($this->stmt_escape->getSQL(true),7);
-        $this->stmt_escape->clear();
-        return $s;
+        if(strpos($value, "\0")!==false){
+            return "x'".SQlite3::escapeString(bin2hex($value))."'";
+        }
+        return "'".SQlite3::escapeString($value)."'";
     }
 
     public function exec(string $sql): bool{

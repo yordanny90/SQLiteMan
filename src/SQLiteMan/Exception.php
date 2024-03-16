@@ -155,9 +155,9 @@ class Exception extends \Exception{
     }
 
     public static function fromPDOException(\PDOException $err){
-        if(!isset($err->errorInfo) && preg_match('/^\w+\[(\w*)\] \[(\d+)\] (.*)$/', $err->getMessage(),$m)){
+        if(!isset($err->errorInfo) && preg_match('/^\w+\[(\w*)\] \[(\d*)\] (.*)$/', $err->getMessage(),$m)){
             array_shift($m);
-            $m[1]=intval($m[1]);
+            $m[1]=$err->getCode();
             $err->errorInfo=$m;
         }
         [,$code,$msg]=$err->errorInfo;
@@ -165,7 +165,7 @@ class Exception extends \Exception{
         return new static($msg, $code, $err);
     }
 
-    public static function fromSQLiteException(\SQLiteException $err){
+    public static function fromSQLiteException(\SQLite3Exception $err){
         [$code,$msg]=[$err->getCode(), $err->getMessage()];
         if(!is_int($code) || !is_string($msg)) return null;
         return new static($msg, $code, $err);

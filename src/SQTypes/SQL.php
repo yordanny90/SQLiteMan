@@ -3,11 +3,13 @@
 namespace SQTypes;
 
 /**
- * #SQValue
- *
  * Repositorio {@link https://github.com/yordanny90/SQLManager}
  */
-class SQL extends \SQVar{
+class SQL extends \SQData{
+    protected function __construct(string $data){
+        parent::__construct($data);
+    }
+
     public function getType(): int{
         return static::TYPE_SQL;
     }

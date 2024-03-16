@@ -2,7 +2,7 @@
 
 namespace SQLiteMan;
 
-use SQTypes;
+use SQData;
 
 /**
  * <b>IMPORTANTE:</b>
@@ -22,7 +22,7 @@ trait Functions{
      * Concatena valores
      * @param $name
      * @param ...$names
-     * @return SQVar
+     * @return SQData
      */
     public function _CONCAT($name, ...$names){
         $sql=[$this->nameVar($name)];
@@ -30,6 +30,6 @@ trait Functions{
             $sql[]=$this->nameVar($n);
         }
         $sql=implode('||', $sql);
-        return SQVar::s($sql);
+        return SQData::s($sql);
     }
 }

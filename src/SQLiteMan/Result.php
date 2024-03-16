@@ -4,7 +4,7 @@ namespace SQLiteMan;
 
 use SQLite3Result;
 
-class Result implements \Countable, \Iterator, \IteratorAggregate{
+class Result implements \Countable, \Iterator{
     /**
      * @var SQLite3Result
      */
@@ -133,9 +133,5 @@ class Result implements \Countable, \Iterator, \IteratorAggregate{
     public function rewind(){
         $this->reset();
         $this->next();
-    }
-
-    public function getIterator(){
-        return $this;
     }
 }
