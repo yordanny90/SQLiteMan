@@ -1,25 +1,36 @@
 <?php
 
+use SQTypes\Value;
+
 /**
  * #SQVar
  *
  * Repositorio {@link https://github.com/yordanny90/SQLManager}
  */
-class SQVar{
+abstract class SQVar{
     const TYPE_VALUE=0;
     const TYPE_NAME=1;
     const TYPE_SQL=2;
 
     /**
-     * @var scalar|array|null
+     * @var scalar|null
      */
-    private $d;
-    private $t;
+    protected $d;
 
-    private function __construct($data, int $type){
+    protected function __construct($data){
         $this->d=$data;
-        $this->t=$type;
     }
+
+    /**
+     * - {@see SQVar::TYPE_VALUE}
+     *
+     * - {@see SQVar::TYPE_NAME}
+     *
+     * - {@see SQVar::TYPE_SQL}
+     *
+     * @return int
+     */
+    abstract public function getType(): int;
 
     /**
      * El dato se debe escapar como un valor
@@ -28,17 +39,16 @@ class SQVar{
      */
     public static function v($value){
         if(!is_scalar($value) && $value!==null) $value=strval($value);
-        return new static($value, self::TYPE_VALUE);
+        return new Value($value);
     }
 
     /**
      * El dato se debe escapar como un nombre
-     * @param array|string $name
+     * @param string $name
      * @return static
      */
-    public static function n($name){
-        if(!is_array($name)) $name=strval($name);
-        return new static($name, self::TYPE_NAME);
+    public static function n(string $name){
+        return new SQTypes\Name($name);
     }
 
     /**
@@ -47,11 +57,7 @@ class SQVar{
      * @return static
      */
     public static function s(string $sql){
-        return new static($sql, self::TYPE_SQL);
-    }
-
-    public function getType(): int{
-        return $this->t;
+        return new \SQTypes\SQL($sql);
     }
 
     public function getData(){

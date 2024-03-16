@@ -2,7 +2,7 @@
 
 namespace SQLiteMan;
 
-use SQVar;
+use SQTypes;
 
 /**
  * <b>IMPORTANTE:</b>
@@ -16,7 +16,7 @@ use SQVar;
  *
  * @link https://sqlite.org/lang_corefunc.html
  */
-trait funcList{
+trait Functions{
 
     /**
      * Concatena valores

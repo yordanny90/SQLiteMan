@@ -13,7 +13,7 @@ namespace MySQLMan;
  *
  * @link https://dev.mysql.com/doc/refman/5.7/en/sql-function-reference.html
  */
-trait functList{
+trait Functions{
     /**
      * Funcion random
      * @return static
@@ -442,7 +442,7 @@ trait functList{
 
     /**
      * Devuelve el tipo de dato del JSON de la columna.<br>
-     * Si no es un JSON válido genera un error SQL. Si no esta seguro de que el valor sea un JSON válido, use {@see functList::_JSON_VALID()} antes
+     * Si no es un JSON válido genera un error SQL. Si no esta seguro de que el valor sea un JSON válido, use {@see Functions::_JSON_VALID()} antes
      * @param string $var Nombre de la columna
      * @return static
      */
@@ -516,8 +516,8 @@ trait functList{
      * @param string $unit Unidad de intervalo temporal
      * {@link https://dev.mysql.com/doc/refman/8.0/en/expressions.html#temporal-intervals}
      * @return static
-     * @see functList::_ADD_INTERVAL()
-     * @see functList::_DATE_SUB()
+     * @see Functions::_ADD_INTERVAL()
+     * @see Functions::_DATE_SUB()
      */
     function &_DATE_ADD($var, $cant, $unit){
         $res=$this->fn_names('DATE_ADD', $var, $this->sql('INTERVAL')->add_value($cant)->add($unit));
@@ -531,8 +531,8 @@ trait functList{
      * @param string $unit Unidad de intervalo temporal
      * {@link https://dev.mysql.com/doc/refman/8.0/en/expressions.html#temporal-intervals}
      * @return static
-     * @see functList::_SUB_INTERVAL()
-     * @see functList::_DATE_ADD()
+     * @see Functions::_SUB_INTERVAL()
+     * @see Functions::_DATE_ADD()
      */
     function &_DATE_SUB($var, $cant, $unit){
         $res=$this->fn_names('DATE_SUB', $var, $this->sql('INTERVAL')->add_value($cant)->add($unit));
@@ -545,8 +545,8 @@ trait functList{
      * @param string $unit Unidad de intervalo temporal
      * {@link https://dev.mysql.com/doc/refman/8.0/en/expressions.html#temporal-intervals}
      * @return static
-     * @see functList::_DATE_ADD()
-     * @see functList::_SUB_INTERVAL()
+     * @see Functions::_DATE_ADD()
+     * @see Functions::_SUB_INTERVAL()
      */
     function &_ADD_INTERVAL($cant, $unit){
         return $this->add('+')->add($this->sql('INTERVAL')->add_value($cant)->add($unit));
@@ -558,8 +558,8 @@ trait functList{
      * @param string $unit Unidad de intervalo temporal
      * {@link https://dev.mysql.com/doc/refman/8.0/en/expressions.html#temporal-intervals}
      * @return static
-     * @see functList::_DATE_SUB()
-     * @see functList::_ADD_INTERVAL()
+     * @see Functions::_DATE_SUB()
+     * @see Functions::_ADD_INTERVAL()
      */
     function &_SUB_INTERVAL($cant, $unit){
         return $this->add('-')->add($this->sql('INTERVAL')->add_value($cant)->add($unit));

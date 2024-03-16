@@ -19,16 +19,17 @@ PHP 7.1+, PHP 8.0+
 
 Solo es necesario incluir la clase [SQVar](src/SQVar.php) y la carpeta de clases según del driver a utilizar:
 - Carpeta de [SQLite](src/SQLiteMan)
-  - Clase Principal: [SQLiteMan\Manager](src/SQLiteMan/Manager.php)
+  - Clases: [SQLiteMan](src/SQLiteMan.php) (recomendado) y [SQLiteManPDO](src/SQLiteManPDO.php)
 - Carpeta de [MySQL](src/MySQLMan)
-  - Clase Principal: [MySQLMan\Manager](src/MySQLMan/Manager.php)
+  - Clase Principal: [MySQLMan](src/MySQLMan.php)
 
 # Compatibilidad del driver/servidor
 
 La comprobación de la compatibilidad según la versión del driver o el servidor queda a criterio de la persona que use la librería
+
 ```php
 $dsn='sqlite::memory:';
 $conn=new PDO($dsn);
 $conn->getAttribute(PDO::ATTR_CLIENT_VERSION);
-$man=new \SQLiteMan\Manager($conn);
+$man=new SQLiteManPDO($conn);
 ```

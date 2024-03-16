@@ -3,7 +3,6 @@
 namespace MySQLMan;
 
 use Exception;
-use GMP;
 use PDO;
 
 /**
@@ -11,8 +10,7 @@ use PDO;
  *
  * Repositorio {@link https://github.com/yordanny90/SQLManager}
  */
-class Manager{
-    use functList;
+abstract class ManagerBase{
 
     const ENGINE_MYISAM='MyISAM';
     const ENGINE_INNODB='InnoDB';
@@ -306,11 +304,11 @@ class Manager{
      * <b>Solo usarlo para negar código sql que devuelve un resultado booleano</b><br>
      * Si se llama como una función estática, devolverá el operador lógico NOT. Y si recibe un parámetro, negará ese valor
      * @return static
-     * @see Manager::_and()
-     * @see Manager::_or()
-     * @see Manager::_xor()
-     * @see Manager::_not()
-     * @see Manager::not()
+     * @see ManagerBase::_and()
+     * @see ManagerBase::_or()
+     * @see ManagerBase::_xor()
+     * @see ManagerBase::_not()
+     * @see ManagerBase::not()
      */
     function &not(){
         $this->parenthesis();
@@ -379,7 +377,7 @@ class Manager{
     /**
      * @param array|mixed $where
      * @return static
-     * @see Manager::where_AND()
+     * @see ManagerBase::where_AND()
      */
     function &add_where($where){
         $this->add($this->where_AND($where));
@@ -399,10 +397,10 @@ class Manager{
      * Agrega el operador AND a la sentencia actual.<br> Y si se especifica, agrega una sentencia SQL
      * @param null $sql Opcional. Sentencia SQL
      * @return static
-     * @see Manager::_and()
-     * @see Manager::_or()
-     * @see Manager::_xor()
-     * @see Manager::not()
+     * @see ManagerBase::_and()
+     * @see ManagerBase::_or()
+     * @see ManagerBase::_xor()
+     * @see ManagerBase::not()
      */
     function &_and($sql=null){
         $this->add(self::LOGIC_OP_AND);
@@ -416,10 +414,10 @@ class Manager{
      * Agrega el operador OR a la sentencia actual.<br> Y si se especifica, agrega una sentencia SQL
      * @param null $sql Opcional. Sentencia SQL
      * @return static
-     * @see Manager::_and()
-     * @see Manager::_or()
-     * @see Manager::_xor()
-     * @see Manager::not()
+     * @see ManagerBase::_and()
+     * @see ManagerBase::_or()
+     * @see ManagerBase::_xor()
+     * @see ManagerBase::not()
      */
     function &_or($sql=null){
         $this->add(self::LOGIC_OP_OR);
@@ -433,11 +431,11 @@ class Manager{
      * Agrega el operador XOR a la sentencia actual.<br> Y si se especifica, agrega una sentencia SQL
      * @param null $sql Opcional. Sentencia SQL
      * @return static
-     * @see Manager::_and()
-     * @see Manager::_or()
-     * @see Manager::_xor()
-     * @see Manager::_not()
-     * @see Manager::not()
+     * @see ManagerBase::_and()
+     * @see ManagerBase::_or()
+     * @see ManagerBase::_xor()
+     * @see ManagerBase::_not()
+     * @see ManagerBase::not()
      */
     function &_xor($sql=null){
         $this->add(self::LOGIC_OP_XOR);
@@ -525,7 +523,7 @@ class Manager{
     }
 
     /**
-     * Alias de {@see Manager::value()}
+     * Alias de {@see SQLiteManPDO::value()}
      * @param $var
      * @param null|string $alias
      * @param bool $numeric
@@ -536,7 +534,7 @@ class Manager{
     }
 
     /**
-     * Alias de {@see Manager::value_notnull()}
+     * Alias de {@see ManagerBase::value_notnull()}
      * @param $var
      * @param null|string $alias
      * @param bool $numeric
@@ -547,7 +545,7 @@ class Manager{
     }
 
     /**
-     * Alias de {@see Manager::value_numeric()}
+     * Alias de {@see ManagerBase::value_numeric()}
      * @param $var
      * @param null|string $alias
      * @return static
@@ -557,7 +555,7 @@ class Manager{
     }
 
     /**
-     * Alias de {@see Manager::name()}
+     * Alias de {@see SQLiteManPDO::name()}
      * @param $var
      * @param null|string $alias
      * @return static
@@ -953,8 +951,8 @@ class Manager{
 
     /**
      * Agrega un bloqueo en modo compartido a una consulta dentro de una transaccion.<br>
-     * IMPORTANTE: Solo aplicable al final de un {@see Manager::sql_select()}.<br>
-     * {@see Manager::LOCK_IN_SHARE_MODE()} y {@see Manager::FOR_UPDATE()} son mutuamente excluyentes.
+     * IMPORTANTE: Solo aplicable al final de un {@see ManagerBase::sql_select()}.<br>
+     * {@see ManagerBase::LOCK_IN_SHARE_MODE()} y {@see ManagerBase::FOR_UPDATE()} son mutuamente excluyentes.
      * @link https://dev.mysql.com/doc/refman/5.5/en/innodb-locking-reads.html
      * @return static
      */
@@ -964,8 +962,8 @@ class Manager{
 
     /**
      * Agrega un bloqueo exclusivo a una consulta dentro de una transaccion.<br>
-     * IMPORTANTE: Solo aplicable al final de un {@see Manager::sql_select()}.<br>
-     * {@see Manager::LOCK_IN_SHARE_MODE()} y {@see Manager::FOR_UPDATE()} son mutuamente excluyentes.
+     * IMPORTANTE: Solo aplicable al final de un {@see ManagerBase::sql_select()}.<br>
+     * {@see ManagerBase::LOCK_IN_SHARE_MODE()} y {@see ManagerBase::FOR_UPDATE()} son mutuamente excluyentes.
      * @link https://dev.mysql.com/doc/refman/5.5/en/innodb-locking-reads.html
      * @return $this
      */
@@ -984,8 +982,8 @@ class Manager{
      * @param null $limit
      * @param null $offset
      * @return static
-     * @see Manager::LOCK_IN_SHARE_MODE()
-     * @see Manager::FOR_UPDATE()
+     * @see ManagerBase::LOCK_IN_SHARE_MODE()
+     * @see ManagerBase::FOR_UPDATE()
      */
     function &sql_select($select, $from=null, $where=null, $groupby=null, $having=null, $orderby=null, $limit=null, $offset=null){
         $res=$this->sql('SELECT')->add_names($select);
@@ -1051,9 +1049,9 @@ class Manager{
      * <u>Para optimizar la creación de las tablas temporales, se recomienda utilizar el ENGINE=MyISAM</u><br>
      * Los valores permitidos son:
      * <ul>
-     * <li>{@see Manager::ENGINE_MYISAM}</li>
-     * <li>{@see Manager::ENGINE_INNODB}</li>
-     * <li>{@see Manager::ENGINE_MEMORY}</li>
+     * <li>{@see ManagerBase::ENGINE_MYISAM}</li>
+     * <li>{@see ManagerBase::ENGINE_INNODB}</li>
+     * <li>{@see ManagerBase::ENGINE_MEMORY}</li>
      * <li><b>NULL</b></li>
      * </ul>
      * @return static
@@ -1079,16 +1077,16 @@ class Manager{
      * @param null|string $index_type Default: <b>NULL</b><br>
      * Los valores permitidos son:
      * <ul>
-     * <li>{@see Manager::INDEX_TYPE_FULLTEXT}. Disponible solamente para Engine=INNODB ó ENGINE=MYISAM</li>
-     * <li>{@see Manager::INDEX_TYPE_SPATIAL}. Disponible solamente para Engine=INNODB ó ENGINE=MYISAM</li>
-     * <li>{@see Manager::INDEX_TYPE_UNIQUE}</li>
+     * <li>{@see ManagerBase::INDEX_TYPE_FULLTEXT}. Disponible solamente para Engine=INNODB ó ENGINE=MYISAM</li>
+     * <li>{@see ManagerBase::INDEX_TYPE_SPATIAL}. Disponible solamente para Engine=INNODB ó ENGINE=MYISAM</li>
+     * <li>{@see ManagerBase::INDEX_TYPE_UNIQUE}</li>
      * <li><b>NULL</b> Si se recibe este valor, no se le agrega el tipo de INDICE [UNIQUE | FULLTEXT | SPATIAL]</li>
      * </ul>
      * @param null|string $index_method Default: <b>NULL</b><br>
      * Los valores permitidos son:
      * <ul>
-     * <li>{@see Manager::INDEX_METHOD_BTREE}</li>
-     * <li>{@see Manager::INDEX_METHOD_HASH}</li>
+     * <li>{@see ManagerBase::INDEX_METHOD_BTREE}</li>
+     * <li>{@see ManagerBase::INDEX_METHOD_HASH}</li>
      * <li>{@see NULL} Si se recibe este valor, no se le agrega USING {BTREE | HASH}  </li>
      * </ul>
      * @return static

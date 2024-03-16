@@ -2,9 +2,6 @@
 
 namespace SQLiteMan;
 
-use PDO;
-use PDOException;
-use PDOStatement;
 use Throwable;
 
 /**
@@ -138,20 +135,38 @@ class Exception extends \Exception{
      */
     const SQLITE_DONE=101;
 
-    public static function fromConnection(PDO $conn, ?Throwable $previous=null){
+    public static function fromSQLiteConn(\SQlite3 $conn, ?Throwable $previous=null){
+        $code=$conn->lastErrorCode();
+        $msg=$conn->lastErrorMsg();
+        if(!is_int($code) || !is_string($msg)) return null;
+        return new static($msg, $code, $previous);
+    }
+
+    public static function fromPDOConn(\PDO $conn, ?Throwable $previous=null){
         [,$code,$msg]=$conn->errorInfo();
         if(!is_int($code) || !is_string($msg)) return null;
         return new static($msg, $code, $previous);
     }
 
-    public static function fromStatement(PDOStatement $stmt, ?Throwable $previous=null){
+    public static function fromPDOStatement(\PDOStatement $stmt, ?Throwable $previous=null){
         [,$code,$msg]=$stmt->errorInfo();
         if(!is_int($code) || !is_string($msg)) return null;
         return new static($msg, $code, $previous);
     }
 
-    public static function fromException(PDOException $err){
+    public static function fromPDOException(\PDOException $err){
+        if(!isset($err->errorInfo) && preg_match('/^\w+\[(\w*)\] \[(\d+)\] (.*)$/', $err->getMessage(),$m)){
+            array_shift($m);
+            $m[1]=intval($m[1]);
+            $err->errorInfo=$m;
+        }
         [,$code,$msg]=$err->errorInfo;
+        if(!is_int($code) || !is_string($msg)) return null;
+        return new static($msg, $code, $err);
+    }
+
+    public static function fromSQLiteException(\SQLiteException $err){
+        [$code,$msg]=[$err->getCode(), $err->getMessage()];
         if(!is_int($code) || !is_string($msg)) return null;
         return new static($msg, $code, $err);
     }
