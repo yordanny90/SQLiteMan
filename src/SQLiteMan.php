@@ -9,84 +9,99 @@ use SQLiteMan\ManagerBase;
 class SQLiteMan extends ManagerBase{
     use Functions;
     /**
-     * @var SQLite3
+     * @var PDO
      */
     protected $conn;
-    protected $fetchMode=SQLITE3_ASSOC;
     private static $tbMaster='`sqlite_master`';
 
     /**
-     * @param SQLite3 $conn
+     * @param PDO $conn
      * @throws Exception
      */
-    public function __construct(SQLite3 $conn){
+    public function __construct(PDO $conn){
+        if($conn->getAttribute(PDO::ATTR_DRIVER_NAME)!=='sqlite'){
+            throw new Exception('Invalid connection driver');
+        }
         $this->conn=&$conn;
     }
 
-    public function timeout(int $sec){
-        $this->conn->busyTimeout($sec*1000);
+    public function version(){
+        $this->conn->getAttribute(PDO::ATTR_CLIENT_VERSION);
     }
 
-    public function timeout_ms(int $ms){
-        $this->conn->busyTimeout($ms);
-    }
-
-    public function fetchMode(int $mode=SQLITE3_ASSOC){
-        $this->fetchMode=$mode;
+    public function timeout(int $sec): bool{
+        return $this->conn->setAttribute(PDO::ATTR_TIMEOUT, $sec);
     }
 
     protected function quoteVal(string $value): string{
-        if(strpos($value, "\0")!==false){
-            return "x'".SQlite3::escapeString(bin2hex($value))."'";
-        }
-        return "'".SQlite3::escapeString($value)."'";
+        return $this->conn->quote($value);
     }
 
-    public function exec(string $sql): bool{
+    protected function quoteBin(string $value): string{
+        return 'x'.$this->conn->quote(bin2hex($value));
+    }
+
+    protected function prepare(string $sql, ?array $params=null): ?PDOStatement{
         $stmt=$this->conn->prepare($sql);
-        if(!$stmt) return false;
-        $res=$stmt->execute();
-        return $res?true:false;
+        if(!$stmt) return null;
+        if($params){
+            foreach($params AS $p=>$v){
+                $stmt->bindValue($p, $v);
+            }
+        }
+        return $stmt;
     }
 
-    public function query(string $sql){
-        return $this->result($this->conn->query($sql));
+    /**
+     * @param string $sql
+     * @param array|null $params
+     * @return bool|int|null
+     */
+    public function exec(string $sql, ?array $params=null){
+        $stmt=$this->prepare($sql, $params);
+        if(!$stmt) return null;
+        return $stmt->execute()?$stmt->rowCount():false;
+    }
+
+    public function query(string $sql, ?array $params=null){
+        $stmt=$this->prepare($sql, $params);
+        if(!$stmt) return null;
+        $stmt->execute();
+        return new \SQLiteMan\Result($stmt);
     }
 
     public function lastInsertID(){
-        $this->conn->lastInsertRowID();
+        $this->conn->lastInsertId();
+    }
+
+    /**
+     * @param int $fetchMode Valores sugeridos: {@see PDO::FETCH_ASSOC}, {@see PDO::FETCH_NUM}, {@see PDO::FETCH_BOTH}, {@see PDO::FETCH_OBJ}, {@see PDO::FETCH_NAMED}
+     * @return bool
+     */
+    public function fetchMode(int $fetchMode): bool{
+        return $this->conn->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, $fetchMode);
+    }
+
+    /**
+     * @return int
+     * @see SQLiteMan::fetchMode()
+     */
+    public function getFetchMode(): int{
+        return intval($this->conn->getAttribute(PDO::ATTR_DEFAULT_FETCH_MODE));
     }
 
     public function throwExceptions(bool $enable){
-        $this->conn->enableExceptions($enable);
+        $this->conn->setAttribute(PDO::ATTR_ERRMODE, $enable?PDO::ERRMODE_EXCEPTION:PDO::ERRMODE_SILENT);
     }
 
-    public function lastError(): \SQLiteMan\Exception{
-        return \SQLiteMan\Exception::fromSQLiteConn($this->conn);
+    public function lastError(): ?\SQLiteMan\Exception{
+        return \SQLiteMan\Exception::fromPDOConn($this->conn);
     }
 
     /**
-     * @return SQLite3
+     * @return PDO
      */
     public function conn(){
         return $this->conn;
-    }
-
-    public static function columnIndex(SQLite3Result $stmt, string $column): ?int{
-        $i=-1;
-        $count=$stmt->numColumns();
-        while(++$i<$count){
-            if($stmt->columnName($i)==$column) return $i;
-        }
-        return null;
-    }
-
-    /**
-     * @param SQLite3Result|false $res
-     * @return \SQLiteMan\Result|false
-     */
-    public function result($res){
-        if(is_a($res, SQLite3Result::class)) return new \SQLiteMan\Result($res, $this->fetchMode);
-        return false;
     }
 }

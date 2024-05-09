@@ -2,8 +2,6 @@
 
 namespace SQLiteMan;
 
-use SQData;
-
 /**
  * Repositorio {@link https://github.com/yordanny90/SQLManager}
  */
@@ -65,28 +63,240 @@ abstract class ManagerBase{
 
     private static $tbMaster='`sqlite_master`';
 
-    abstract public function timeout(int $sec);
+    abstract public function version();
+
+    abstract public function timeout(int $sec): bool;
 
     abstract protected function quoteVal(string $value): string;
 
-    abstract public function exec(string $sql): bool;
+    abstract protected function quoteBin(string $value): string;
 
     /**
      * @param string $sql
-     * @return iterable|false
+     * @param array|null $params
+     * @return bool|int|null
      */
-    abstract public function query(string $sql);
+    abstract public function exec(string $sql, ?array $params=null);
+
+    abstract public function query(string $sql, ?array $params=null);
 
     abstract public function lastInsertID();
 
     abstract public function throwExceptions(bool $enable);
 
-    abstract public function lastError(): Exception;
+    abstract public function lastError(): ?Exception;
+
+    public function esc(Data $value): string{
+        if(is_a($value, SQL::class)){
+            return strval($value);
+        }
+        elseif(is_a($value, Binary::class)){
+            return strval($this->value_bin($value->data()));
+        }
+        elseif(is_a($value, Value::class)){
+            return strval($this->value($value->data()));
+        }
+        elseif(is_a($value, Name::class)){
+            return strval($this->name($value->data()));
+        }
+        return "";
+    }
+
+    public function escSQL(Data $value): SQL{
+        if(is_a($value, SQL::class)){
+            return $value;
+        }
+        elseif(is_a($value, Binary::class)){
+            return $this->value_bin($value->data());
+        }
+        elseif(is_a($value, Value::class)){
+            return $this->value($value->data());
+        }
+        elseif(is_a($value, Name::class)){
+            return $this->name($value->data());
+        }
+        return $this->sql('');
+    }
+
+    /**
+     * @param Data ...$value
+     * @return SQL
+     */
+    public function escList(Data ...$value): SQL{
+        $sql=implode(',', array_map([$this, 'esc'], $value));
+        return $this->sql($sql);
+    }
+
+    /**
+     * @param string|Data $sql
+     * @return SQL
+     */
+    public function sql($sql): SQL{
+        if(is_a($sql, Data::class)) return $this->escSQL($sql);
+        return Data::sql($sql);
+    }
+
+    /**
+     * Escapa un nombre de tabla o columna
+     * @param string $name
+     * @return string
+     */
+    public static function quoteName(string $name): string{
+        return '`'.str_replace('`', '``', $name).'`';
+    }
+
+    const REGEXP_ESCAPED_NAMEPART='/^(`(?:[^`]|``)+`)(?:\.(.*))?$/';
+    const REGEXP_UNESCAPED_NAMEPART='/^([^`\.][^\.]*)(?:\.(.*))?$/';
+
+    /**
+     * Escapa el nombre o nombres indicados
+     * @param string|Data $name
+     * @return SQL
+     */
+    public function name($name): SQL{
+        if(is_a($name, Data::class)) return $this->escSQL($name);
+        return $this->sql($this->name_($name));
+    }
+
+    /**
+     * @param string $name
+     * @param string|null $alias
+     * @param false|string|null $indexedBy
+     * @return SQL
+     */
+    public function qualified_name($name, ?string $alias=null, $indexedBy=null): SQL{
+        if(is_a($name, Data::class)) return $this->escSQL($name);
+        $sql=$this->name_($name);
+        if($alias!==null) $sql.=" AS ".$this->name_($alias);
+        if(is_string($indexedBy)) $sql.=" INDEXED BY ".$this->name_($indexedBy);
+        elseif($indexedBy===false) $sql.=" NOT INDEXED";
+        return $this->sql($sql);
+    }
+
+    /**
+     * @param string $name
+     * @return string
+     */
+    private function name_(string $name): string{
+        if($name==='*') return $name;
+        if(preg_match(static::REGEXP_ESCAPED_NAMEPART, $name, $m)){
+            $r=strval($m[1]);
+            if(isset($m[2])) $r.='.'.self::name_($m[2]);
+            return $r;
+        }
+        elseif(preg_match(static::REGEXP_UNESCAPED_NAMEPART, $name, $m)){
+            $r=self::quoteName($m[1]);
+            if(isset($m[2])) $r.='.'.self::name_($m[2]);
+            return $r;
+        }
+        return self::quoteName($name);
+    }
+
+    /**
+     * Escapa el nombre o nombres indicados, con excepciones
+     *
+     * Se hace una excepción si se detecta que el valor string recibido ya esta escapado como nombre o es un parametro que inicia con `:` (parámetros), o es un texto entre paréntesis `()`
+     *
+     * ## CUIDADO: Este método no es seguro para datos desconocidos.
+     * ###Si el origen del nombre es externo al código (como variables POST, GET, HEADERS, etc), debe utilizar primero la función {@see \SQLiteMan\ManagerBase::name()} sobre esos valores
+     * @param string|array|Data $name
+     * @return SQL
+     */
+    public function nameVar($name): SQL{
+        if(is_string($name) && preg_match('/^\:\w+$/', $name)){
+            return $this->sql($name);
+        }
+        else{
+            return $this->name($name);
+        }
+    }
+
+    /**
+     * Escapa las lista de nombres o expresiones separados por comas por medio de {@see Esc::escapeName()}
+     * @param array $list Lista de nombres o expresiones. Si el indice es un string, se usa como alias
+     * @param bool $alias
+     * @return SQL
+     * @link https://www.sqlite.org/syntax/expr.html
+     * @link https://www.sqlite.org/syntax/result-column.html
+     */
+    public function nameList(array $list, bool $alias=true): SQL{
+        $sql='';
+        $first=true;
+        foreach($list as $as=>$name){
+            if($first) $first=false;
+            else $sql.=", ";
+            $sql.=static::name($name).($alias && is_string($as)?' AS '.static::quoteName($as):'');
+        }
+        return $this->sql($sql);
+    }
+
+    /**
+     * Escapa las lista de nombres o expresiones separados por comas por medio de {@see Esc::escapeNameVar()}
+     * @param array $list Lista de nombres o expresiones. Si el indice es un string, se usa como alias
+     * @param bool $alias
+     * @return SQL
+     * @link https://www.sqlite.org/syntax/expr.html
+     * @link https://www.sqlite.org/syntax/result-column.html
+     */
+    public function nameVarList(array $list, bool $alias=true): SQL{
+        $sql='';
+        $first=true;
+        foreach($list as $as=>$name){
+            if($first) $first=false;
+            else $sql.=", ";
+            $sql.=$this->nameVar($name).($alias && is_string($as)?' AS '.static::quoteName($as):'');
+        }
+        return $this->sql($sql);
+    }
+
+    /**
+     * @param null|scalar|Data $value
+     * @return SQL
+     */
+    public function value($value): SQL{
+        if(is_a($value, Data::class)) return $this->escSQL($value);
+        if($value===null) return $this->sql('NULL');
+        if(is_bool($value)) return $this->sql($value?'1':'0');
+        if(is_int($value)||is_float($value)) return $this->sql(strval($value));
+        return $this->sql($this->quoteVal(str_replace("\0", "", $value)));
+    }
+
+    /**
+     * @param null|scalar|Data $value
+     * @return SQL
+     */
+    public function value_bin($value): SQL{
+        if(is_a($value, Data::class)) return $this->escSQL($value);
+        if($value===null) return $this->sql('NULL');
+        if(is_bool($value)) return $this->sql($value?'1':'0');
+        if(is_int($value)||is_float($value)) return $this->sql($value);
+        return $this->sql($this->quoteBin(strval($value)));
+    }
+
+    public function values(array $value): SQL{
+        $sql=implode(',', array_map([$this, 'value'], $value));
+        return $this->sql($sql);
+    }
+
+    public function values_bin(array $value): SQL{
+        $sql=implode(',', array_map([$this, 'value_bin'], $value));
+        return $this->sql($sql);
+    }
 
     public function vacuum(?string $schema=null, ?string $toFile=null){
         $sql='VACUUM';
         if(is_string($schema)) $sql.=' '.static::quoteName($schema);
         if(is_string($toFile)) $sql.=' INTO '.$this->value($toFile);
+        return $this->exec($sql);
+    }
+
+    public function attach_database(string $file, string $as){
+        $sql='ATTACH DATABASE '.static::value($file).' AS '.static::name($as);
+        return $this->exec($sql);
+    }
+
+    public function detach_database(string $as){
+        $sql='DETACH DATABASE '.static::name($as);
         return $this->exec($sql);
     }
 
@@ -143,39 +353,44 @@ abstract class ManagerBase{
         return $def;
     }
 
-    public function indexList_sql(?string $schema=null, ?string $table=null){
-        if(is_string($schema)) $schema=static::quoteName($schema).'.';
-        $sql="SELECT `name`, `tbl_name` FROM ".$schema.static::$tbMaster.' WHERE type="index"';
-        if(!is_null($table)) $sql.=' AND tbl_name='.$this->value($table);
-        return $sql;
-    }
-
     public function schemaList(){
         return $this->query('PRAGMA database_list');
     }
 
-    public function functionList_sql(){
-        return 'PRAGMA function_list';
+    public function sql_functionList(): SQL{
+        $sql='PRAGMA function_list';
+        return $this->sql($sql);
     }
 
-    public function tableDDL_sql(string $table, ?string $schema=null){
+    public function sql_indexList(?string $schema=null, ?string $table=null): SQL{
         if(is_string($schema)) $schema=static::quoteName($schema).'.';
-        return 'SELECT `sql` FROM '.$schema.self::$tbMaster.' WHERE type="table" AND name='.$this->value($table);
+        $sql="SELECT `name`, `tbl_name` FROM ".$schema.static::$tbMaster.' WHERE type="index"';
+        if(!is_null($table)) $sql.=' AND tbl_name='.$this->value($table);
+        return $this->sql($sql);
     }
 
-    public function tableList_sql(?string $schema=null){
+    public function sql_tableDDL(string $table, ?string $schema=null): SQL{
         if(is_string($schema)) $schema=static::quoteName($schema).'.';
-        return 'SELECT `name` FROM '.$schema.self::$tbMaster.' WHERE type='.$this->value('table');
+        $sql='SELECT `sql` FROM '.$schema.self::$tbMaster.' WHERE type="table" AND name='.$this->value($table);
+        return $this->sql($sql);
     }
 
-    public function viewList_sql(?string $schema=null){
+    public function sql_tableList(?string $schema=null): SQL{
         if(is_string($schema)) $schema=static::quoteName($schema).'.';
-        return 'SELECT `name` FROM '.$schema.self::$tbMaster.' WHERE type='.$this->value('view');
+        $sql='SELECT `name` FROM '.$schema.self::$tbMaster.' WHERE type='.$this->value('table');
+        return $this->sql($sql);
     }
 
-    public function tableInfo_sql(string $table, ?string $schema=null){
+    public function sql_viewList(?string $schema=null): SQL{
         if(is_string($schema)) $schema=static::quoteName($schema).'.';
-        return 'pragma '.$schema.'table_info('.$this->name_($table).')';
+        $sql='SELECT `name` FROM '.$schema.self::$tbMaster.' WHERE type='.$this->value('view');
+        return $this->sql($sql);
+    }
+
+    public function sql_tableInfo(string $table, ?string $schema=null): SQL{
+        if(is_string($schema)) $schema=static::quoteName($schema).'.';
+        $sql='pragma '.$schema.'table_info('.$this->name_($table).')';
+        return $this->sql($sql);
     }
 
     /**
@@ -192,7 +407,7 @@ abstract class ManagerBase{
      * </ul>
      * @return false|string
      */
-    public function createTable_sql(string $table, array $columns, ?array $constraints=null, array $options=[]){
+    public function sql_createTable(string $table, array $columns, ?array $constraints=null, array $options=[]): SQL{
         $sql="CREATE ".(($options['temp']??false)?"TEMP ":'')."TABLE ";
         if($options['if']??false) $sql.="IF NOT EXISTS ";
         $sql.=$this->name_($table)."(\n";
@@ -213,7 +428,7 @@ abstract class ManagerBase{
         if(is_array($constraints) && count($constraints)>0) $sql.=",\n".implode(",\n", array_map([$this, 'sql'], $constraints));
         $sql.="\n)";
         if($options['without_rowid']??false) $sql.="\nWITHOUT ROWID";
-        return $sql;
+        return $this->sql($sql);
     }
 
     /**
@@ -228,40 +443,40 @@ abstract class ManagerBase{
      * </ul>
      * @return false|string
      */
-    public function createTableSelect_sql(string $table, string $select, array $options=[]){
+    public function sql_createTableSelect(string $table, string $select, array $options=[]): SQL{
         $sql="CREATE ".(($options['temp']??false)?"TEMP ":'')."TABLE ";
         if($options['if']??false) $sql.="IF NOT EXISTS ";
         $sql.=$this->name_($table);
         $sql.=" AS ".$select;
-        return $sql;
+        return $this->sql($sql);
     }
 
-    public function renameTable_sql(string $table, string $newTable){
+    public function sql_renameTable(string $table, string $newTable): SQL{
         $sql="ALTER TABLE ".$this->name_($table)."\nRENAME TO ".$this->name_($newTable);
-        return $sql;
+        return $this->sql($sql);
     }
 
-    public function dropTable_sql(string $table, $if_exists=true){
+    public function sql_dropTable(string $table, $if_exists=true): SQL{
         if($if_exists){
             $sql="DROP TABLE IF EXISTS ".$this->name_($table);
         }
         else{
             $sql="DROP TABLE ".$this->name_($table);
         }
-        return $sql;
+        return $this->sql($sql);
     }
 
-    public function renameColumn_sql(string $table, string $column, string $newColumn){
+    public function sql_renameColumn(string $table, string $column, string $newColumn): SQL{
         $sql="ALTER TABLE ".$this->name_($table)."\nRENAME COLUMN ".$this->name_($column)." TO ".$this->name_($newColumn);
-        return $sql;
+        return $this->sql($sql);
     }
 
-    public function addColumn_sql(string $table, string $column, $colDef){
+    public function sql_addColumn(string $table, string $column, $colDef): SQL{
         $sql="ALTER TABLE ".$this->name_($table)."\nADD COLUMN ".$this->columnDef($column, $colDef);
-        return $sql;
+        return $this->sql($sql);
     }
 
-    public function whereAND(array $list, $op='='){
+    public function whereAND_clause(array $list, $op='='): SQL{
         $sql='';
         $first=true;
         foreach($list as $col=>$var){
@@ -269,10 +484,10 @@ abstract class ManagerBase{
             else $sql.=" AND\n";
             $sql.=(is_string($col)?$this->nameVar($col).$op:'').$this->value($var);
         }
-        return $sql;
+        return $this->sql($sql);
     }
 
-    public function whereOR(array $list, $op='='){
+    public function whereOR_clause(array $list, $op='='): SQL{
         $sql='';
         $first=true;
         foreach($list as $col=>$var){
@@ -280,183 +495,27 @@ abstract class ManagerBase{
             else $sql.=" OR\n";
             $sql.=(is_string($col)?$this->nameVar($col).$op:'').$this->value($var);
         }
-        return $sql;
+        return $this->sql($sql);
     }
 
-    protected function sql($sql){
-        if(is_a($sql, SQData::class)) return $this->SQData($sql);
-        return strval($sql);
-    }
-
-    /**
-     * Escapa un nombre de tabla o columna
-     * @param string $name
-     * @return string
-     */
-    public static function quoteName(string $name){
-        return '`'.str_replace('`', '``', $name).'`';
-    }
-
-    const REGEXP_ESCAPED_NAMEPART='/^(`(?:[^`]|``)+`)(?:\.(.*))?$/';
-    const REGEXP_UNESCAPED_NAMEPART='/^([^`\.][^\.]*)(?:\.(.*))?$/';
-
-    /**
-     * Escapa el nombre o nombres indicados
-     * @param string|SQData $name
-     * @return string
-     */
-    public function name($name){
-        if(is_a($name, SQData::class)) return $this->SQData($name);
-        return $this->name_($name);
-    }
-
-    private function name_($name){
-        $name=strval($name);
-        if($name==='*') return $name;
-        if(preg_match(static::REGEXP_ESCAPED_NAMEPART, $name, $m)){
-            $r=$m[1];
-            if(isset($m[2])) $r.='.'.self::name_($m[2]);
-            return $r;
-        }
-        elseif(preg_match(static::REGEXP_UNESCAPED_NAMEPART, $name, $m)){
-            $r=self::quoteName($m[1]);
-            if(isset($m[2])) $r.='.'.self::name_($m[2]);
-            return $r;
-        }
-        return self::quoteName($name);
-    }
-
-    /**
-     * Escapa el nombre o nombres indicados, con excepciones
-     *
-     * Se hace una excepción si se detecta que el valor string recibido ya esta escapado como nombre o es un parametro que inicia con `:` (parámetros), o es un texto entre paréntesis `()`
-     *
-     * ## CUIDADO: Este método no es seguro para datos desconocidos.
-     * ###Si el origen del nombre es externo al código (como variables POST, GET, HEADERS, etc), debe utilizar primero la función {@see Esc::escapeName()} sobre esos valores
-     * @param string|array|SQData $name
-     * @return string
-     */
-    public function nameVar($name){
-        if(is_string($name) && preg_match('/^\:\w+$/', $name)){
-            return $name;
-        }
-        else{
-            return $this->name($name);
-        }
-    }
-
-    /**
-     * Escapa las lista de nombres o expresiones separados por comas por medio de {@see Esc::escapeName()}
-     * @param array $list Lista de nombres o expresiones. Si el indice es un string, se usa como alias
-     * @param bool $alias
-     * @return string
-     * @link https://www.sqlite.org/syntax/expr.html
-     * @link https://www.sqlite.org/syntax/result-column.html
-     */
-    public function nameList(array $list, bool $alias=true){
-        $sql='';
-        $first=true;
-        foreach($list as $as=>$name){
-            if($first) $first=false;
-            else $sql.=", ";
-            $sql.=static::name($name).($alias && is_string($as)?' AS '.static::quoteName($as):'');
-        }
-        return $sql;
-    }
-
-    /**
-     * Escapa las lista de nombres o expresiones separados por comas por medio de {@see Esc::escapeNameVar()}
-     * @param array $list Lista de nombres o expresiones. Si el indice es un string, se usa como alias
-     * @param bool $alias
-     * @return string
-     * @link https://www.sqlite.org/syntax/expr.html
-     * @link https://www.sqlite.org/syntax/result-column.html
-     */
-    public function nameVarList(array $list, bool $alias=true){
-        $sql='';
-        $first=true;
-        foreach($list as $as=>$name){
-            if($first) $first=false;
-            else $sql.=", ";
-            $sql.=$this->nameVar($name).($alias && is_string($as)?' AS '.static::quoteName($as):'');
-        }
-        return $sql;
-    }
-
-    /**
-     * @param null|scalar|SQData $value
-     * @return bool|string
-     */
-    public function value($value){
-        if(is_a($value, SQData::class)) return $this->SQData($value);
-        if($value===null) return 'NULL';
-        if(is_bool($value)) return $value?'1':'0';
-        if(is_int($value)||is_float($value)) return strval($value);
-        return $this->quoteVal(strval($value));
-    }
-
-    public function values(array $value){
-        $sql=implode(',', array_map([$this, 'value'], $value));
-        return $sql;
-    }
-
-    /**
-     * @param SQData $value
-     * @return bool|string|null
-     */
-    public function SQData(SQData $value){
-        if($value->getType()===SQData::TYPE_SQL){
-            return $value->getData();
-        }
-        elseif($value->getType()===SQData::TYPE_VALUE){
-            return $this->value($value->getData());
-        }
-        elseif($value->getType()===SQData::TYPE_NAME){
-            return $this->name($value->getData());
-        }
-        return "";
-    }
-
-    /**
-     * @param SQData ...$value
-     * @return string
-     */
-    public function SQDataList(SQData ...$value){
-        $sql=implode(',', array_map([$this, 'SQData'], $value));
-        return $sql;
-    }
-
-    public function fn($name, ...$params){
-        $sql=$name.'('.$this->nameVarList($params, false).')';
-        return SQData::s($sql);
-    }
-
-    public function fn_val($name, ...$params){
-        $sql=$name.'('.$this->values($params).')';
-        return SQData::s($sql);
-    }
-
-    public function selectValues_sql(array ...$values){
-        $sql="VALUES\n";
-        $first=true;
+    public function selectValues_sql(array $val, array ...$values): SQL{
+        $sql="VALUES (".$this->values($val).')';
         foreach($values as $row){
-            if($first) $first=false;
-            else $sql.=", ";
-            $sql.='('.$this->values($row).')';
+            $sql.=",\n(".$this->values($row).')';
         }
-        return $sql;
+        return $this->sql($sql);
     }
 
-    public function setList(array $list){
+    public function set_clause(array $list): SQL{
         $sql='';
         $first=true;
         foreach($list as $name=>$var){
             if($first) $first=false;
             else $sql.=",\n";
-            if(!is_string($name) && is_a($var, SQData::class)) $sql.=$this->SQData($var);
+            if(!is_string($name) && is_a($var, Data::class)) $sql.=$this->esc($var);
             else $sql.=$this->nameVar($name).'='.$this->value($var);
         }
-        return $sql;
+        return $this->sql($sql);
     }
 
     /**
@@ -471,7 +530,7 @@ abstract class ManagerBase{
      */
     const REGEXP_ORDER_SIMPLE='/^(?:ASC|DESC)$/i';
 
-    public function orderBy(array $list, bool $simple=false){
+    public function orderBy_clause(array $list, bool $simple=false): SQL{
         $sql='';
         $first=true;
         foreach($list as $name=>$ord){
@@ -485,35 +544,35 @@ abstract class ManagerBase{
                 $sql.=static::name($ord);
             }
         }
-        return $sql;
+        return $this->sql($sql);
     }
 
-    public function select_sql(array $columns, $from=null, $where=null, ?array $groupBy=null, $having=null, ?string $window=null, ?array $orderBy=null, $limit=null, $offset=null){
+    public function select_sql(array $columns, $from=null, ?array $where=null, ?array $groupBy=null, ?array $having=null, ?string $window=null, ?array $orderBy=null, $limit=null, $offset=null): SQL{
         $sql="SELECT ".$this->nameVarList($columns);
         if(is_array($from)) $sql.="\nFROM ".$this->nameVarList($from);
         elseif($from!==null) $sql.="\nFROM ".$this->nameVar($from);
-        if($where!==null) $sql.="\nWHERE ".$this->whereAND($where);
+        if($where!==null) $sql.="\nWHERE ".$this->whereAND_clause($where);
         if($groupBy!==null) $sql.="\nGROUP BY ".$this->nameVarList($groupBy, false);
-        if($having!==null) $sql.="\nHAVING ".$this->whereAND($having);
+        if($having!==null) $sql.="\nHAVING ".$this->whereAND_clause($having);
         if($window!==null) $sql.="\nWINDOW ".$window;
-        if($orderBy!==null) $sql.="\nORDER BY ".$this->orderBy($orderBy);
+        if($orderBy!==null) $sql.="\nORDER BY ".$this->orderBy_clause($orderBy);
         if($limit!==null) $sql.="\nLIMIT ".$this->value($limit);
         if($offset!==null) $sql.="\nOFFSET ".$this->value($offset);
-        return $sql;
+        return $this->sql($sql);
     }
 
     /**
      * @param string $table
      * @param string|null $or Valores: {@see ManagerBase::$INSERT_UPDATE_OR_LIST}
      * @param array|null $returning
-     * @return string
+     * @return SQL
      */
-    public function insert_default_sql(string $table, ?string $or=null, ?array $returning=null){
+    public function insert_default_sql(string $table, ?string $or=null, ?array $returning=null): SQL{
         $sql="INSERT";
         if(is_string($or) && in_array(strtoupper($or), static::$INSERT_UPDATE_OR_LIST)) $sql.=" OR ".$or;
         $sql.=" INTO ".$this->name_($table)."\nDEFAULT VALUES";
         if($returning!==null) $sql.="\nRETURNING ".$this->nameVarList($returning);
-        return $sql;
+        return $this->sql($sql);
     }
 
     /**
@@ -526,17 +585,17 @@ abstract class ManagerBase{
      * @param string|null $or Valores: {@see ManagerBase::$INSERT_UPDATE_OR_LIST}
      * @param string|null $upsert {@see ManagerBase::upsert_clause()}
      * @param array|null $returning
-     * @return string
+     * @return SQL
      */
-    public function insert_sql(string $table, array $data, ?string $or=null, ?string $upsert=null, ?array $returning=null){
+    public function insert_sql(string $table, array $data, ?string $or=null, ?string $upsert=null, ?array $returning=null): SQL{
         $sql="INSERT";
         if(is_string($or) && in_array(strtoupper($or), static::$INSERT_UPDATE_OR_LIST)) $sql.=" OR ".$or;
         $sql.=" INTO ".$this->name_($table);
-        $sql.="(\n".$this->nameList(array_keys($data), false)."\n)";
-        $sql.="\nVALUES(\n".$this->values($data)."\n)";
+        $sql.="(".$this->nameList(array_keys($data), false).")";
+        $sql.=" VALUES(".$this->values($data).")";
         if(is_string($upsert)) $sql.="\n".$upsert;
         if($returning!==null) $sql.="\nRETURNING ".$this->nameVarList($returning);
-        return $sql;
+        return $this->sql($sql);
     }
 
     /**
@@ -546,33 +605,35 @@ abstract class ManagerBase{
      * @param string|null $or Valores: {@see ManagerBase::$INSERT_UPDATE_OR_LIST}
      * @param string|null $upsert {@see ManagerBase::upsert_clause()}
      * @param array|null $returning
-     * @return string
+     * @return SQL
      */
-    public function insert_select_sql(string $table, ?array $columns, string $select, ?string $or=null, ?string $upsert=null, ?array $returning=null){
+    public function insert_select_sql(string $table, ?array $columns, string $select, ?string $or=null, ?string $upsert=null, ?array $returning=null): SQL{
         $sql="INSERT";
         if(is_string($or) && in_array(strtoupper($or), static::$INSERT_UPDATE_OR_LIST)) $sql.=" OR ".$or;
         $sql.=" INTO ".$this->name_($table);
-        if($columns) $sql.=" (\n".$this->nameList($columns, false)."\n)";
+        if($columns) $sql.=" (".$this->nameList($columns, false).")";
         $sql.="\n".$select;
         if(is_string($upsert)) $sql.="\n".$upsert;
         if($returning!==null) $sql.="\nRETURNING ".$this->nameVarList($returning);
-        return $sql;
+        return $this->sql($sql);
     }
 
-    public function update_sql(string $table, array $data, ?string $upsert, ?string $or=null, ?array $returning=null){
-        $sql="INSERT";
-        if(is_string($or) && in_array(strtoupper($or), static::$INSERT_UPDATE_OR_LIST)) $sql.=" OR ".$or;
-        $sql.=" INTO ".$this->name_($table);
-        $sql.="(\n".$this->nameList(array_keys($data), false)."\n)";
-        $sql.="\nVALUES(\n".$this->values($data)."\n)";
-        if(is_string($upsert)) $sql.="\n".$upsert;
-
+    public function update_sql($table, array $data, $from, ?array $where, ?string $or=null, ?array $returning=null): SQL{
+        $sql="UPDATE";
+        if($or!==null && in_array(strtoupper($or), static::$INSERT_UPDATE_OR_LIST)) $sql.=" OR ".$or;
+        $sql.=" ".$this->qualified_name($table)." SET ".$this->set_clause($data);
+        if(is_array($from)) $sql.="\nFROM ".$this->nameVarList($from);
+        elseif($from!==null) $sql.="\nFROM ".$this->nameVar($from);
+        if($where!==null) $sql.="\nWHERE ".$this->whereAND_clause($where);
         if($returning!==null) $sql.="\nRETURNING ".$this->nameVarList($returning);
-        return $sql;
+        return $this->sql($sql);
     }
 
-    public function delete_sql(){
-        //TODO
+    public function delete_sql($table, array $where, ?array $returning=null): SQL{
+        $sql="DELETE FROM ".$this->qualified_name($table);
+        $sql.="\nWHERE ".$this->whereAND_clause($where);
+        if($returning!==null) $sql.="\nRETURNING ".$this->nameVarList($returning);
+        return $this->sql($sql);
     }
 
     /**
@@ -583,23 +644,23 @@ abstract class ManagerBase{
      * @param mixed $conflict_where  Solo aplicable si se indica $conflict_columns
      * @param array|null $update_set
      * @param mixed $update_where Solo aplicable si se indica $update_set
-     * @return string
+     * @return SQL
      */
-    public function upsert_clause(?array $conflict_columns=null, $conflict_where=null, ?array $update_set=null, $update_where=null){
+    public function upsert_clause(?array $conflict_columns=null, $conflict_where=null, ?array $update_set=null, $update_where=null): SQL{
         $sql="ON CONFLICT";
         if($conflict_columns){
-            $sql.=" (\n".$this->orderBy($conflict_columns, true)."\n)";
-            if($conflict_where!==null) $sql.="\nWHERE ".$this->whereAND($conflict_where);
+            $sql.=" (\n".$this->orderBy_clause($conflict_columns, true)."\n)";
+            if($conflict_where!==null) $sql.="\nWHERE ".$this->whereAND_clause($conflict_where);
         }
         $sql.=" DO";
         if($update_set){
-            $sql.=" UPDATE SET\n".$this->setList($update_set);
-            if($update_where!==null) $sql.="\nWHERE ".$this->whereAND($update_where);
+            $sql.=" UPDATE SET ".$this->set_clause($update_set);
+            if($update_where!==null) $sql.="\nWHERE ".$this->whereAND_clause($update_where);
         }
         else{
             $sql.=" NOTHING";
         }
-        return $sql;
+        return $this->sql($sql);
     }
 
     /**
@@ -619,7 +680,7 @@ abstract class ManagerBase{
      * @return array|false
      */
     public function detectColumnDiff($table, array $columns){
-        $defs=$this->query($this->tableInfo_sql($table));
+        $defs=$this->query($this->sql_tableInfo($table));
         if(!$defs) return false;
         $drop=[];
         $change=[];

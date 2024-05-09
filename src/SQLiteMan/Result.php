@@ -2,136 +2,86 @@
 
 namespace SQLiteMan;
 
-use SQLite3Result;
+use PDO;
+use PDOStatement;
 
-class Result implements \Countable, \Iterator{
+class Result implements \IteratorAggregate{
     /**
-     * @var SQLite3Result
+     * @var \PDOStatement|null
      */
     protected $res;
-    /**
-     * @var ?int
-     */
-    protected $mode=SQLITE3_ASSOC;
-    protected $k=-1;
-    /**
-     * @var false|array
-     */
-    protected $v=false;
 
-    public function __construct(SQLite3Result $result, int $mode=SQLITE3_ASSOC){
-        $this->res=$result;
-        $this->fetchMode($mode);
-        $this->res->reset();
-    }
-
-    /**
-     * @param int $mode Posibles valores: {@see SQLITE3_ASSOC}, {@see SQLITE3_NUM}, {@see SQLITE3_BOTH}
-     * @return void
-     */
-    public function fetchMode(int $mode){
-        $this->mode=$mode;
-    }
-
-    /**
-     * @return bool
-     * @see SQLite3Result::reset()
-     */
-    public function reset(){
-        $this->k=-1;
-        $this->v=false;
-        return $this->res->reset();
-    }
-
-    /**
-     * @param int $mode Default: {@see SQLITE3_BOTH}
-     * @return array|false
-     * @see SQLite3Result::fetchArray()
-     */
-    public function fetchArray(int $mode=SQLITE3_BOTH){
-        if(isset($this->count) && $this->k>=$this->count) $this->k=-1;
-        ++$this->k;
-        $this->v=$this->res->fetchArray($mode);
-        if(!$this->valid() && $this->k>=0) $this->count=$this->k;
-        return $this->v;
-    }
-
-    /**
-     * Ver {@see Result::fetchMode()}
-     * @return array|false
-     */
-    public function fetch(){
-        return $this->fetchArray($this->mode);
+    public function __construct(PDOStatement $result){
+        $this->res=&$result;
     }
 
     /**
      * @return int
-     * @see SQLite3Result::numColumns()
+     * @see PDOStatement::columnCount()
      */
-    public function numColumns(){
-        return $this->res->numColumns();
+    public function columnCount(){
+        return $this->res->columnCount();
+    }
+
+    /**
+     * @param string $name
+     * @return int|null
+     */
+    public function getColumnIndex(string $name): ?int{
+        $i=-1;
+        $c=$this->columnCount();
+        while(++$i<$c){
+            if($this->getColumnName($i)==$name) return $i;
+        }
+        return null;
     }
 
     /**
      * @param int $column
-     * @return false|string
-     * @see SQLite3Result::columnName()
+     * @return string|null
+     * @see Result::getColumnMeta()
      */
-    public function columnName(int $column){
-        return $this->res->columnName($column);
+    public function getColumnName(int $column): ?string{
+        return $this->getColumnMeta($column)['name'] ?? null;
     }
 
     /**
      * @param int $column
-     * @return false|int
-     * @see SQLite3Result::columnType()
+     * @return string|null
+     * @see Result::getColumnMeta()
      */
-    public function columnType(int $column){
-        return $this->res->columnType($column);
+    public function getColumnType(int $column): ?string{
+        return $this->getColumnMeta($column)['sqlite:decl_type'] ?? null;
     }
 
-    public function finalize(){
-        $this->k=-1;
-        $this->v=false;
-        return $this->res->finalize();
+    /**
+     * Ver {@see PDOStatement::getColumnMeta()}
+     * @param int $column
+     * @return array|null
+     */
+    public function getColumnMeta(int $column): ?array{
+        return $this->res->getColumnMeta($column)?:null;
     }
 
-    private $count;
-
-    public function count(){
-        if(is_int($this->count)) return $this->count;
-        if(!$this->res->reset()) return 0;
-        $c=0;
-        while($this->res->fetchArray(SQLITE3_NUM)!==false){
-            ++$c;
-        }
-        $this->count=$c;
-        if(!$this->res->reset()) return $this->count;
-        $k=-2;
-        while($this->k>++$k){
-            $this->res->fetchArray(SQLITE3_NUM);
-        }
-        return $this->count;
+    public function fetch(?int $mode=null){
+        return $this->res->fetch($mode);
     }
 
-    public function current(){
-        return $this->v;
+    public function fetchColumn(int $column){
+        return $this->res->fetchColumn($column);
     }
 
-    public function next(){
-        $this->fetch();
+    /**
+     * Ver {@see PDOStatement::fetchAll()}
+     * @param int $mode
+     * @param ...$fetchArgs
+     * @return array|false
+     */
+    public function fetchAll(int $mode, ...$fetchArgs){
+        return $this->res->fetchAll($mode, ...$fetchArgs);
     }
 
-    public function key(){
-        return $this->k;
-    }
-
-    public function valid(){
-        return is_array($this->v);
-    }
-
-    public function rewind(){
-        $this->reset();
-        $this->next();
+    public function getIterator(): \Traversable{
+        return $this->res;
     }
 }

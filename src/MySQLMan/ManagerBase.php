@@ -521,7 +521,7 @@ abstract class ManagerBase{
     }
 
     /**
-     * Alias de {@see SQLiteManPDO::value()}
+     * Alias de {@see SQLiteMan::value()}
      * @param $var
      * @param null|string $alias
      * @param bool $numeric
@@ -553,7 +553,7 @@ abstract class ManagerBase{
     }
 
     /**
-     * Alias de {@see SQLiteManPDO::name()}
+     * Alias de {@see SQLiteMan::name()}
      * @param $var
      * @param null|string $alias
      * @return static

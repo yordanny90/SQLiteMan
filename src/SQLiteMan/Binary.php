@@ -1,16 +1,12 @@
 <?php
 
-namespace SQTypes;
+namespace SQLiteMan;
 
 /**
  * Repositorio {@link https://github.com/yordanny90/SQLManager}
  */
-class Name extends \SQData{
+class Binary extends Data{
     protected function __construct(string $data){
         parent::__construct($data);
-    }
-
-    public function getType(): int{
-        return static::TYPE_NAME;
     }
 }
