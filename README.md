@@ -31,5 +31,5 @@ La comprobación de la compatibilidad según la versión del driver o el servido
 $dsn='sqlite::memory:';
 $conn=new PDO($dsn);
 $conn->getAttribute(PDO::ATTR_CLIENT_VERSION);
-$man=new SQLiteManPDO($conn);
+$man=new SQLiteMan($conn);
 ```

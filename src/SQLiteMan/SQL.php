@@ -5,27 +5,81 @@ namespace SQLiteMan;
 /**
  * Repositorio {@link https://github.com/yordanny90/SQLManager}
  */
-class SQL extends Data{
-    protected function __construct(string $data){
-        parent::__construct($data);
+class SQL{
+    use SQL_adds;
+
+    /**
+     * @var string
+     */
+    protected $d='';
+    /**
+     * @var Manager
+     */
+    protected $man;
+    
+    public function __construct(string $data, Manager &$db){
+        $this->d=$data;
+        $this->man=&$db;
     }
 
-    function &not(): self{
-        $this->d='NOT '.$this->d;
+    public function &_parentheses(string $sql=''): self{
+        $this->d.='('.$sql.')';
         return $this;
     }
 
-    public function &parentheses(): self{
-        $this->d='('.$this->d.')';
-        return $this;
-    }
-
-    public function &add(string $sql): self{
+    public function &_(string $sql): self{
         $this->d.=' '.$sql;
         return $this;
     }
 
+    public function &_comma(string $sql=''): self{
+        $this->d.=','.$sql;
+        return $this;
+    }
+
+    public function &_comma_value($value): self{
+        return $this->_comma($this->man->value($value));
+    }
+
+    public function &_comma_name($name): self{
+        return $this->_comma($this->man->name($name));
+    }
+
+    public function &_as(string $alias): self{
+        return $this->_('AS '.Manager::quoteName($alias));
+    }
+
+    public function &_concat($value): self{
+        $this->d.='||'.$this->man->value($value);
+        return $this;
+    }
+
+    public function &_value($value): self{
+        return $this->_($this->man->value($value));
+    }
+
+    /**
+     * @param $values
+     * @return $this
+     * @see Manager::values()
+     */
+    public function &_values($values): self{
+        return $this->_($this->man->values($values));
+    }
+
+    public function &_name($name): self{
+        return $this->_($this->man->name($name));
+    }
+
+    public function &_names($value, bool $alias=true): self{
+        return $this->_($this->man->names($value, $alias));
+    }
+
     public function __toString(){
-        return $this->data();
+        return $this->d;
+    }
+
+    public function __clone(){
+        return new self($this->d, $this->man);
     }
 }

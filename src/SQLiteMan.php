@@ -1,18 +1,15 @@
 <?php
 
-use SQLiteMan\Functions;
-use SQLiteMan\ManagerBase;
+use SQLiteMan\Manager;
 
 /**
  * Repositorio {@link https://github.com/yordanny90/SQLManager}
  */
-class SQLiteMan extends ManagerBase{
-    use Functions;
+class SQLiteMan extends Manager{
     /**
      * @var PDO
      */
     protected $conn;
-    private static $tbMaster='`sqlite_master`';
 
     /**
      * @param PDO $conn
@@ -34,10 +31,11 @@ class SQLiteMan extends ManagerBase{
     }
 
     protected function quoteVal(string $value): string{
+        if(strpos($value, "\0")!==false) return $this->value_hex($value)->_concat('').'';
         return $this->conn->quote($value);
     }
 
-    protected function quoteBin(string $value): string{
+    protected function quoteHex(string $value): string{
         return 'x'.$this->conn->quote(bin2hex($value));
     }
 
