@@ -1,16 +1,17 @@
 <?php
-// Require PHP 7.2+
-require __DIR__.'/../src/_autoloader.php';
+// Require PHP 7.2+, 8.0+
 
-$db=__DIR__.'/test.db';
+require __DIR__.'/../src/.autoloader.php';
+
+$db='test.db';
 try{
-//    $m=new SQLiteManPDO(new PDO('sqlite:'.$db));
-//    $m->conn()->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-    $m=new SQLiteMan(new SQLite3($db));
+    $m=new SQLiteMan(new PDO('sqlite::memory:'));
+    $m->attach_database($db, 'test');
+    $m->fetchMode(PDO::FETCH_ASSOC);
     $m->timeout(5);
     $m->throwExceptions(true);
-    $m->exec($sql=$m->dropTable_sql('proc'));
-    $m->exec($sql=$m->createTable_sql('proc', [
+    $m->exec($sql=$m->sql_dropTable('test.proc'));
+    $m->exec($sql=$m->sql_createTable('test.proc', [
         'ID'=>[
             'type'=>SQLiteMan::TYPE_INTEGER,
             'pk'=>1,
@@ -34,24 +35,26 @@ try{
         ],
         'dt'=>[
             'type'=>SQLiteMan::TYPE_INTEGER,
-            'defaultExpr'=>$m->fn_val('datetime', 'now', 'localtime'),
+            'defaultExpr'=>$m->fn_values('datetime', 'now', 'localtime'),
             'notnull'=>true,
         ],
-    ], null, [
-        'if'=>true,
-    ]));
-    $i=-1;
-    while(++$i<256) $m->exec($sql=$m->insert_sql('proc', [
+    ], null, null, false, true));
+    $i=32;
+    while(++$i<127) $m->exec($sql=$m->sql_insert('test.proc', [
         'name'=>'N:'.chr($i).'--',
+        'open'=>$i,
     ]));
-    $res=$m->query($sql=$m->select_sql(['*'], 'proc', [SQData::s("ID IN (1,5,23,230,99)")]));
+    $res=$m->query($sql=$m->sql_select('*', 'test.proc', [$m->name("ID")->cond_inlist(...[1, 5, 23, 230, 99])]));
+    foreach($res as $row){
+        echo json_encode($row).PHP_EOL;
+    }
+    $res=$m->query($sql=$m->sql_select('*', 'test.proc', [$m->name("name")->cond_contains("0")], null, null, null, null, 10));
+    echo $sql;
     foreach($res as $row){
         echo json_encode($row).PHP_EOL;
     }
 }catch(PDOException $err){
     $e=\SQLiteMan\Exception::fromPDOException($err);
-}catch(SQLite3Exception $err){
-    $e=\SQLiteMan\Exception::fromSQLiteException($err);
 }catch(Exception $err){
     $e=$err;
 }
