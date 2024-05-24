@@ -1,7 +1,9 @@
 <?php
 // Require PHP 7.2+, 8.0+
 
-require __DIR__.'/../src/.autoloader.php';
+set_include_path(__DIR__.'/../src');
+spl_autoload_extensions('.php');
+spl_autoload_register();
 
 $db='test.db';
 try{
