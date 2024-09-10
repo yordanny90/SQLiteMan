@@ -6,7 +6,7 @@ namespace SQLiteMan;
  * #IMPORTANTE:
  * La funciones que se declaren aquí, deben apegarse a la documentación oficial de sqlite.
  *
- * Repositorio {@link https://github.com/yordanny90/SQLManager}
+ * Repositorio {@link https://github.com/yordanny90/SQLiteMan}
  */
 trait SQL_adds{
 

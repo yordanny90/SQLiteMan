@@ -5,7 +5,7 @@ namespace SQLiteMan;
 /**
  * Dato previamente escapado
  *
- * Repositorio {@link https://github.com/yordanny90/SQLManager}
+ * Repositorio {@link https://github.com/yordanny90/SQLiteMan}
  */
 class OParam implements SelfEscape{
     private $n;

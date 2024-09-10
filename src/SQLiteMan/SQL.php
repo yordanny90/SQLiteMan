@@ -3,7 +3,7 @@
 namespace SQLiteMan;
 
 /**
- * Repositorio {@link https://github.com/yordanny90/SQLManager}
+ * Repositorio {@link https://github.com/yordanny90/SQLiteMan}
  */
 class SQL{
     use SQL_adds;

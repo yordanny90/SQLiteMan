@@ -12,7 +12,7 @@ namespace SQLiteMan;
  * - Las funciones que inician con `_` generan llamados a funciones existentes en SQLite, y forman parte de un SQL
  * - Las funciones que terminan con `_` son utilidades que generan cláusulas o expresiones que forman una parte de un SQL
  *
- * Repositorio {@link https://github.com/yordanny90/SQLManager}
+ * Repositorio {@link https://github.com/yordanny90/SQLiteMan}
  */
 trait Manager_adds{
     private static $tbMaster='`sqlite_master`';

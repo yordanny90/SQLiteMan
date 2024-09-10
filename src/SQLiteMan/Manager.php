@@ -3,7 +3,7 @@
 namespace SQLiteMan;
 
 /**
- * Repositorio {@link https://github.com/yordanny90/SQLManager}
+ * Repositorio {@link https://github.com/yordanny90/SQLiteMan}
  */
 abstract class Manager{
     use Manager_adds;
@@ -80,14 +80,12 @@ abstract class Manager{
 
     abstract protected function quoteHex(string $value): string;
 
-    /**
-     * @param string $sql
-     * @param array|null $params
-     * @return bool|int|null
-     */
-    abstract public function exec(string $sql, ?array $params=null);
-
-    abstract public function query(string $sql, ?array $params=null);
+	/**
+	 * @param string $sql
+	 * @param array|null $params
+	 * @return Result|null
+	 */
+    abstract public function query(string $sql, ?array $params=null): ?Result;
 
     abstract public function lastInsertID();
 
@@ -282,17 +280,17 @@ abstract class Manager{
         $sql='VACUUM';
         if(is_string($schema)) $sql.=' '.$this->quoteName($schema);
         if(is_string($toFile)) $sql.=' INTO '.$this->value($toFile);
-        return $this->exec($sql);
+        return $this->query($sql);
     }
 
     public function attach_database(string $file, string $as){
         $sql=$this->sql('ATTACH DATABASE :file')->_as($as);
-        return $this->exec($sql, [':file'=>$file]);
+        return $this->query($sql, [':file'=>$file]);
     }
 
     public function detach_database(string $as){
         $sql='DETACH DATABASE '.$this->name($as);
-        return $this->exec($sql);
+        return $this->query($sql);
     }
 
     /**

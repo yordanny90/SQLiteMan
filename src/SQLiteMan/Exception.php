@@ -7,7 +7,7 @@ use Throwable;
 /**
  * Lista de códigos de resultados obtenidos de {@link https://sqlite.org/c3ref/c_abort.html}
  *
- * Repositorio {@link https://github.com/yordanny90/SQLManager}
+ * Repositorio {@link https://github.com/yordanny90/SQLiteMan}
  */
 class Exception extends \Exception{
     /**

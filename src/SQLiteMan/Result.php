@@ -2,7 +2,6 @@
 
 namespace SQLiteMan;
 
-use PDO;
 use PDOStatement;
 
 class Result implements \IteratorAggregate{
@@ -16,11 +15,32 @@ class Result implements \IteratorAggregate{
     }
 
     /**
+     * Conteo de filas afectadas. Válido para sentencias que alteran los datos, como update, delete, insert
+     * @return int|null
+     */
+    public function affectedRows(): ?int{
+        return $this->columnCount()===0?$this->res->rowCount():null;
+    }
+
+    /**
      * @return int
      * @see PDOStatement::columnCount()
      */
     public function columnCount(){
         return $this->res->columnCount();
+    }
+
+    /**
+     * @return array
+     */
+    public function getColumnNames(): array{
+        $names=[];
+        $i=-1;
+        $c=$this->columnCount();
+        while(++$i<$c){
+            $names[$i]=$this->getColumnName($i);
+        }
+        return $names;
     }
 
     /**
@@ -55,6 +75,15 @@ class Result implements \IteratorAggregate{
     }
 
     /**
+     * @param int $column
+     * @return string|null
+     * @see Result::getColumnMeta()
+     */
+    public function getColumnNativeType(int $column): ?string{
+        return $this->getColumnMeta($column)['native_type'] ?? null;
+    }
+
+    /**
      * Ver {@see PDOStatement::getColumnMeta()}
      * @param int $column
      * @return array|null
@@ -64,6 +93,7 @@ class Result implements \IteratorAggregate{
     }
 
     public function fetch(?int $mode=null){
+        if($mode===null) return $this->res->fetch();
         return $this->res->fetch($mode);
     }
 
@@ -73,12 +103,13 @@ class Result implements \IteratorAggregate{
 
     /**
      * Ver {@see PDOStatement::fetchAll()}
-     * @param int $mode
+     * @param int|null $mode
      * @param ...$fetchArgs
-     * @return array|false
+     * @return array
      */
-    public function fetchAll(int $mode, ...$fetchArgs){
-        return $this->res->fetchAll($mode, ...$fetchArgs);
+    public function fetchAll(?int $mode=null, ...$fetchArgs): array{
+        if($mode===null) return $this->res->fetchAll()?:[];
+        return $this->res->fetchAll($mode, ...$fetchArgs)?:[];
     }
 
     public function getIterator(): \Traversable{

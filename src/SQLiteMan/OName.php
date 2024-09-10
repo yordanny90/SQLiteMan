@@ -2,6 +2,11 @@
 
 namespace SQLiteMan;
 
+/**
+ * Nombre de tabla, columna, ...
+ *
+ * Repositorio {@link https://github.com/yordanny90/SQLiteMan}
+ */
 class OName implements SelfEscape{
     private $n;
 

@@ -1,9 +1,10 @@
 <?php
 
 use SQLiteMan\Manager;
+use SQLiteMan\Result;
 
 /**
- * Repositorio {@link https://github.com/yordanny90/SQLManager}
+ * Repositorio {@link https://github.com/yordanny90/SQLiteMan}
  */
 class SQLiteMan extends Manager{
     /**
@@ -53,19 +54,12 @@ class SQLiteMan extends Manager{
     /**
      * @param string $sql
      * @param array|null $params
-     * @return bool|int|null
+     * @return Result|null
      */
-    public function exec(string $sql, ?array $params=null){
+    public function query(string $sql, ?array $params=null): ?Result{
         $stmt=$this->prepare($sql, $params);
-        if(!$stmt) return null;
-        return $stmt->execute()?$stmt->rowCount():false;
-    }
-
-    public function query(string $sql, ?array $params=null){
-        $stmt=$this->prepare($sql, $params);
-        if(!$stmt) return null;
-        $stmt->execute();
-        return new \SQLiteMan\Result($stmt);
+        if(!$stmt || !$stmt->execute()) return null;
+        return new Result($stmt);
     }
 
     public function lastInsertID(){

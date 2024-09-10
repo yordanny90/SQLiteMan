@@ -5,7 +5,7 @@ namespace SQLiteMan;
 /**
  * Dato previamente escapado
  *
- * Repositorio {@link https://github.com/yordanny90/SQLManager}
+ * Repositorio {@link https://github.com/yordanny90/SQLiteMan}
  */
 class OSQL implements SelfEscape{
     private $n;

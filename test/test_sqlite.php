@@ -1,9 +1,12 @@
 <?php
 // Require PHP 7.2+, 8.0+
 
-set_include_path(__DIR__.'/../src');
-spl_autoload_extensions('.php');
-spl_autoload_register();
+$dir_class=__DIR__.'/../src';
+spl_autoload_register(function($class) use ($dir_class){
+	if($class=='SQLiteMan' || strpos($class, 'SQLiteMan\\')===0){
+		include $dir_class.'/'.$class.'.php';
+	}
+});
 
 $db='test.db';
 try{
@@ -12,8 +15,8 @@ try{
     $m->fetchMode(PDO::FETCH_ASSOC);
     $m->timeout(5);
     $m->throwExceptions(true);
-    $m->exec($sql=$m->sql_dropTable('test.proc'));
-    $m->exec($sql=$m->sql_createTable('test.proc', [
+    $m->query($sql=$m->sql_dropTable('test.proc'));
+	$m->query($sql=$m->sql_createTable('test.proc', [
         'ID'=>[
             'type'=>SQLiteMan::TYPE_INTEGER,
             'pk'=>1,
@@ -42,7 +45,7 @@ try{
         ],
     ], null, null, false, true));
     $i=32;
-    while(++$i<127) $m->exec($sql=$m->sql_insert('test.proc', [
+    while(++$i<127) $m->query($sql=$m->sql_insert('test.proc', [
         'name'=>'N:'.chr($i).'--',
         'open'=>$i,
     ]));
