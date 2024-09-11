@@ -15,28 +15,29 @@ try{
     $m->fetchMode(PDO::FETCH_ASSOC);
     $m->timeout(5);
     $m->throwExceptions(true);
-    $m->query($sql=$m->sql_dropTable('test.proc'));
-	$m->query($sql=$m->sql_createTable('test.proc', [
+    $m->query($sql=$m->sql_dropTable('test.chars'));
+	$m->query($sql=$m->sql_createTable('test.chars', [
         'ID'=>[
             'type'=>SQLiteMan::TYPE_INTEGER,
             'pk'=>1,
             'ai'=>1,
             'notnull'=>true,
         ],
-        'name'=>[
+        'char'=>[
             'type'=>SQLiteMan::TYPE_TEXT,
             'notnull'=>true,
             'default'=>'',
         ],
-        'open'=>[
+        'val'=>[
             'type'=>SQLiteMan::TYPE_INTEGER,
             'default'=>0,
             'notnull'=>true,
         ],
-        'close'=>[
+        'ord'=>[
             'type'=>SQLiteMan::TYPE_INTEGER,
             'default'=>0,
             'notnull'=>true,
+            'unique'=>true,
         ],
         'dt'=>[
             'type'=>SQLiteMan::TYPE_INTEGER,
@@ -44,19 +45,29 @@ try{
             'notnull'=>true,
         ],
     ], null, null, false, true));
-    $i=32;
-    while(++$i<127) $m->query($sql=$m->sql_insert('test.proc', [
-        'name'=>'N:'.chr($i).'--',
-        'open'=>$i,
-    ]));
-    $res=$m->query($sql=$m->sql_select('*', 'test.proc', [$m->name("ID")->cond_inlist(...[1, 5, 23, 230, 99])]));
-    foreach($res as $row){
-        echo json_encode($row).PHP_EOL;
+    $start=33;
+    $i=-1;
+    while(++$i<256){
+        $c=$i+$start;
+        $m->query($sql=$m->sql_insert('test.chars', [
+            'char'=>'('.chr($c).')',
+            'ord'=>ord(chr($c)),
+            'val'=>$c,
+        ], SQLiteMan::OR_IGNORE));
     }
-    $res=$m->query($sql=$m->sql_select('*', 'test.proc', [$m->name("name")->cond_contains("0")], null, null, null, null, 10));
-    echo $sql;
+    $res=$m->query($sql=$m->sql_select('*', 'test.chars', [
+        $m->name('ord')->cond_inlist(...[33, 37, 55, 127, 128, 0, 1, 6, 32])
+    ], null, null, null, ['ID'=>'ASC']));
+    echo $sql.PHP_EOL;
     foreach($res as $row){
-        echo json_encode($row).PHP_EOL;
+        echo (json_encode($row)?:'#ERROR_JSON: '.$row['ord'].' '.$row['char']).PHP_EOL;
+    }
+    $res=$m->query($sql=$m->sql_select('*', 'test.chars', [
+        $m->name("char")->cond_contains($m->sql(':c'))
+    ], null, null, null, null, 10), [':c'=>"(\00)"]);
+    echo $sql.PHP_EOL;
+    foreach($res as $row){
+        echo (json_encode($row)?:'#ERROR_JSON: '.$row['ord'].' '.$row['char']).PHP_EOL;
     }
 }catch(PDOException $err){
     $e=\SQLiteMan\Exception::fromPDOException($err);

@@ -86,7 +86,7 @@ trait Manager_adds{
 
     /**
      * Ver {@link https://www.sqlite.org/syntax/ordering-term.html}
-     * @param array|string|SQL|SelfEscape $name
+     * @param array|string|SQL|SelfEscape $names
      * @param string|null $ord 'ASC', 'DESC'
      * @param string|null $nullsPos 'FIRST', 'LAST'
      * @param string|null $collation
@@ -95,12 +95,16 @@ trait Manager_adds{
     public function orderBy_($names, ?string $ord=null, ?string $nullsPos=null, ?string $collation=null): SQL{
         if(is_array($names)){
             $sql=null;
-            foreach($names as $name){
+            foreach($names as $name=>$ordN){
+                if(!is_string($name)){
+                    $name=$ordN;
+                    $ordN=$ord;
+                }
                 if($sql===null){
-                    $sql=$this->orderBy_($name, $ord, $nullsPos, $collation);
+                    $sql=$this->orderBy_($name, $ordN, $nullsPos, $collation);
                 }
                 else{
-                    $sql->_comma($this->orderBy_($name, $ord, $nullsPos, $collation));
+                    $sql->_comma($this->orderBy_($name, $ordN, $nullsPos, $collation));
                 }
             }
             if($sql===null) $sql=$this->sql('');
