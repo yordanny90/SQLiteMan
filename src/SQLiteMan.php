@@ -1,12 +1,80 @@
 <?php
 
-use SQLiteMan\Manager;
-use SQLiteMan\Result;
+use SQLiteManager\Manager_base;
+use SQLiteManager\Manager_adds;
+use SQLiteManager\Result;
 
 /**
  * Repositorio {@link https://github.com/yordanny90/SQLiteMan}
  */
-class SQLiteMan extends Manager{
+class SQLiteMan{
+	use Manager_base;
+	use Manager_adds;
+
+	const SCHEMA_MAIN='main';
+	const SCHEMA_TEMP='temp';
+	const TYPE_INTEGER='INTEGER';
+	const TYPE_REAL='REAL';
+	const TYPE_TEXT='TEXT';
+	const TYPE_BLOB='BLOB';
+	const TYPE_NUMERIC='NUMERIC';
+	const TYPES=[
+		self::TYPE_INTEGER,
+		self::TYPE_REAL,
+		self::TYPE_TEXT,
+		self::TYPE_BLOB,
+		self::TYPE_NUMERIC,
+	];
+
+	/**
+	 * Ver {@link https://www.sqlite.org/datatype3.html}
+	 *
+	 * Si la columna no tiene un tipo, su afinidad es {@see SQLiteMan::TYPE_BLOB}
+	 *
+	 * Si el tipo no coincide con la lista {@see SQLiteMan::TYPES},
+	 * la afinidad de la columna se asocia al primer valor cuyo índice sea parte del tipo de la columna.
+	 *
+	 * Si no coincide con ninguno de la lista, su afinidad es {@see SQLiteMan::TYPE_NUMERIC}
+	 *
+	 * Ejemplos:
+	 * - "FLOATING POINT" tendrá afinidad con {@see SQLiteMan::TYPE_INTEGER} ya que contiene "INT", y está antes que con "FLOA" en la lista
+	 * - "DECIMAL", "DATE", "BOOL" y "STRING" tendrán afinidad con {@see SQLiteMan::TYPE_NUMERIC} ya que no contienen ningun índice de la lista
+	 * @see SQLiteMan::typeColumnAffinity()
+	 */
+	const TYPES_AFFINITY=[
+		'INT'=>self::TYPE_INTEGER,
+		'CHAR'=>self::TYPE_TEXT,
+		'CLOB'=>self::TYPE_TEXT,
+		'TEXT'=>self::TYPE_TEXT,
+		'BLOB'=>self::TYPE_BLOB,
+		'REAL'=>self::TYPE_REAL,
+		'FLOA'=>self::TYPE_REAL,
+		'DOUB'=>self::TYPE_REAL,
+	];
+
+	const JOIN_INNER='INNER';
+	const JOIN_LEFT='LEFT';
+	const JOIN_LEFT_OUTER='LEFT OUTER';
+	const JOIN_RIGTH='RIGHT';
+	const JOIN_RIGTH_OUTER='RIGHT OUTER';
+	const JOIN_FULL='FULL';
+	const JOIN_FULL_OUTER='FULL OUTER';
+	const JOINS=[
+		self::JOIN_INNER,
+		self::JOIN_LEFT,
+		self::JOIN_LEFT_OUTER,
+		self::JOIN_RIGTH,
+		self::JOIN_RIGTH_OUTER,
+		self::JOIN_FULL,
+		self::JOIN_FULL_OUTER,
+	];
+
+	const OR_ABORT='ABORT';
+	const OR_FAIL='FAIL';
+	const OR_IGNORE='IGNORE';
+	const OR_REPLACE='REPLACE';
+	const OR_ROLLBACK='ROLLBACK';
+
     /**
      * @var PDO
      */
@@ -86,8 +154,8 @@ class SQLiteMan extends Manager{
         $this->conn->setAttribute(PDO::ATTR_ERRMODE, $enable?PDO::ERRMODE_EXCEPTION:PDO::ERRMODE_SILENT);
     }
 
-    public function lastError(): ?\SQLiteMan\Exception{
-        return \SQLiteMan\Exception::fromPDOConn($this->conn);
+    public function lastError(): ?\SQLiteManager\Exception{
+        return \SQLiteManager\Exception::fromPDOConn($this->conn);
     }
 
     /**

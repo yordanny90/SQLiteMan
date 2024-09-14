@@ -1,6 +1,6 @@
 <?php
 
-namespace SQLiteMan;
+namespace SQLiteManager;
 
 /**
  * #IMPORTANTE:
@@ -86,7 +86,7 @@ trait Manager_adds{
 
     /**
      * Ver {@link https://www.sqlite.org/syntax/ordering-term.html}
-     * @param array|string|SQL|SelfEscape $names
+     * @param array|string|SQL $names
      * @param string|null $ord 'ASC', 'DESC'
      * @param string|null $nullsPos 'FIRST', 'LAST'
      * @param string|null $collation
@@ -119,7 +119,7 @@ trait Manager_adds{
 
     /**
      * Ver {@link https://www.sqlite.org/syntax/indexed-column.html}
-     * @param string|SQL|SelfEscape $name
+     * @param string|SQL $name
      * @param string|null $ord 'ASC', 'DESC'
      * @param string|null $collate
      * @return SQL
@@ -132,10 +132,10 @@ trait Manager_adds{
     }
 
     /**
-     * Usar para {@see Manager::sql_insert_select()} y {@see Manager::sql_insert()}
+     * Usar para {@see \SQLiteMan::sql_insert_select()} y {@see \SQLiteMan::sql_insert()}
      *
      * Ver {@link https://www.sqlite.org/syntax/upsert-clause.html}
-     * @param null|array|string|SQL|SelfEscape $conflict_columns Ver {@see Manager::indexedColumn_()}
+     * @param null|array|string|SQL $conflict_columns Ver {@see \SQLiteMan::indexedColumn_()}
      * @param mixed $conflict_where  Solo aplicable si se indica $conflict_columns
      * @param array|null $update_set
      * @param array|null $update_where Solo aplicable si se indica $update_set
@@ -161,9 +161,9 @@ trait Manager_adds{
     /**
      * Genera el SQL de un CASE utilizable dentro de otra sentencia SQL.<br>
      * El objetivo es obtener un valor según la condición que se cumpla.
-     * @param bool|string|SQL|SelfEscape $case_name Valor inicial que se comparará con las condiciones
-     * @param SQL $whenList Lista de condiciones y los valores correspondientes. Ver {@see Manager::whenList_()}, {@see Manager::when_()}
-     * @param null|string|SQL|SelfEscape $else_value Valor que se devolverá si ninguna condición se cumple
+     * @param bool|string|SQL $case_name Valor inicial que se comparará con las condiciones
+     * @param SQL $whenList Lista de condiciones y los valores correspondientes. Ver {@see \SQLiteMan::whenList_()}, {@see \SQLiteMan::when_()}
+     * @param null|string|SQL $else_value Valor que se devolverá si ninguna condición se cumple
      * @return SQL
      */
     public function &case_($case_name, SQL $whenList, $else_value=null): SQL{
@@ -179,7 +179,7 @@ trait Manager_adds{
     }
 
     /**
-     * Usado para generar parametros de {@see Manager::case_()}
+     * Usado para generar parametros de {@see \SQLiteMan::case_()}
      *
      * Ejemplo:
      * ```php
@@ -207,7 +207,7 @@ trait Manager_adds{
     }
 
     /**
-     * Usado para generar parametros de {@see Manager::case_()}
+     * Usado para generar parametros de {@see \SQLiteMan::case_()}
      *
      * Ejemplo:
      * ```php
@@ -215,8 +215,8 @@ trait Manager_adds{
      *   ->_($man->when_(2, 'Dos'))
      *   ->_($man->when_(3, 'Tres'));
      * ```
-     * @param string|SQL|SelfEscape $when
-     * @param string|SQL|SelfEscape $then
+     * @param string|SQL $when
+     * @param string|SQL $then
      * @return SQL
      */
     public function &when_($when, $then): SQL{
@@ -224,7 +224,7 @@ trait Manager_adds{
     }
 
     /**
-     * @param array|string|SQL|SelfEscape $names
+     * @param array|string|SQL $names
      * @return SQL
      */
     public function &returning_($names){
@@ -267,8 +267,8 @@ trait Manager_adds{
     }
 
     /**
-     * @param string|SQL|SelfEscape $table
-     * @param array $columns Las llaves son los nombres y el valor es la info de la columna. {@see Manager::columnDef()}
+     * @param string|SQL $table
+     * @param array $columns Las llaves son los nombres y el valor es la info de la columna. {@see \SQLiteMan::columnDef()}
      * @param array|null $constraints
      * @param null|SQL $options Table options
      * @param bool $temp Si es true, se crea una tabla temporal
@@ -301,7 +301,7 @@ trait Manager_adds{
     }
 
     /**
-     * @param string|SQL|SelfEscape $table
+     * @param string|SQL $table
      * @param SQL $select Sentencia select
      * @param bool|null $temp Si es true, se crea una tabla temporal
      * @param bool|null $if Si es true, se intenta crear la tabla solo si no existe
@@ -387,9 +387,9 @@ trait Manager_adds{
      * @param array|null $groupBy
      * @param array|null $having
      * @param SQL|null $window
-     * @param null|array|string|SQL|SelfEscape $orderBy Ver {@see Manager::orderBy_()}
-     * @param null|scalar|SQL|SelfEscape $limit
-     * @param null|scalar|SQL|SelfEscape $offset Requiere indicar un limit
+     * @param null|array|string|SQL $orderBy Ver {@see \SQLiteMan::orderBy_()}
+     * @param null|scalar|SQL $limit
+     * @param null|scalar|SQL $offset Requiere indicar un limit
      * @return SQL
      */
     public function sql_select($select, $from=null, ?array $where=null, ?array $groupBy=null, ?array $having=null, ?SQL $window=null, $orderBy=null, $limit=null, $offset=null): SQL{
@@ -416,8 +416,8 @@ trait Manager_adds{
     ];
 
     /**
-     * @param string|SQL|SelfEscape $table
-     * @param string|null $or Valores: {@see Manager::$INSERT_UPDATE_OR_LIST}
+     * @param string|SQL $table
+     * @param string|null $or Valores: {@see \SQLiteMan::$INSERT_UPDATE_OR_LIST}
      * @return SQL
      */
     public function sql_insert_default($table, ?string $or=null): SQL{
@@ -428,14 +428,14 @@ trait Manager_adds{
     }
 
     /**
-     * @param string|SQL|SelfEscape $table
+     * @param string|SQL $table
      * @param array $data Array asociativo con los datos a insertar <code>
      * [
      *   "columnaA"=>"valorA",
      *   "columnaB"=>"valorB",
      * ]</code>
-     * @param string|null $or Valores: {@see Manager::$INSERT_UPDATE_OR_LIST}
-     * @param SQL|null $upsert {@see Manager::upsert_()}
+     * @param string|null $or Valores: {@see \SQLiteMan::$INSERT_UPDATE_OR_LIST}
+     * @param SQL|null $upsert {@see \SQLiteMan::upsert_()}
      * @return SQL
      */
     public function sql_insert($table, array $data, ?string $or=null, ?SQL $upsert=null): SQL{
@@ -449,11 +449,11 @@ trait Manager_adds{
     }
 
     /**
-     * @param string|SQL|SelfEscape $table
+     * @param string|SQL $table
      * @param array|null $columns
      * @param SQL $select
-     * @param string|null $or Valores: {@see Manager::$INSERT_UPDATE_OR_LIST}
-     * @param SQL|null $upsert {@see Manager::upsert_()}
+     * @param string|null $or Valores: {@see \SQLiteMan::$INSERT_UPDATE_OR_LIST}
+     * @param SQL|null $upsert {@see \SQLiteMan::upsert_()}
      * @return SQL
      */
     public function sql_insert_select($table, ?array $columns, SQL $select, ?string $or=null, ?SQL $upsert=null): SQL{

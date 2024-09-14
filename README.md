@@ -17,7 +17,7 @@ PHP 7.1+, PHP 8.0+
 
 # Compatibilidad del driver/servidor
 
-La comprobación de la compatibilidad según la versión del driver o el servidor queda a criterio de la persona que use la librería
+La comprobación de la compatibilidad según la versión del driver o el servidor:
 
 ```php
 $dsn='sqlite::memory:';

@@ -1,104 +1,17 @@
 <?php
 
-namespace SQLiteMan;
+namespace SQLiteManager;
 
 /**
  * Repositorio {@link https://github.com/yordanny90/SQLiteMan}
  */
-abstract class Manager{
-    use Manager_adds;
-
-    const SCHEMA_MAIN='main';
-    const SCHEMA_TEMP='temp';
-    const TYPE_INTEGER='INTEGER';
-    const TYPE_REAL='REAL';
-    const TYPE_TEXT='TEXT';
-    const TYPE_BLOB='BLOB';
-    const TYPE_NUMERIC='NUMERIC';
-    const TYPES=[
-        self::TYPE_INTEGER,
-        self::TYPE_REAL,
-        self::TYPE_TEXT,
-        self::TYPE_BLOB,
-        self::TYPE_NUMERIC,
-    ];
+trait Manager_base{
 
     /**
-     * Ver {@link https://www.sqlite.org/datatype3.html}
-     *
-     * Si la columna no tiene un tipo, su afinidad es {@see Manager::TYPE_BLOB}
-     *
-     * Si el tipo no coincide con la lista {@see Manager::TYPES},
-     * la afinidad de la columna se asocia al primer valor cuyo índice sea parte del tipo de la columna.
-     *
-     * Si no coincide con ninguno de la lista, su afinidad es {@see Manager::TYPE_NUMERIC}
-     *
-     * Ejemplos:
-     * - "FLOATING POINT" tendrá afinidad con {@see Manager::TYPE_INTEGER} ya que contiene "INT", y está antes que con "FLOA" en la lista
-     * - "DECIMAL", "DATE", "BOOL" y "STRING" tendrán afinidad con {@see Manager::TYPE_NUMERIC} ya que no contienen ningun índice de la lista
-     * @see Manager::typeColumnAffinity()
-     */
-    const TYPES_AFFINITY=[
-        'INT'=>self::TYPE_INTEGER,
-        'CHAR'=>self::TYPE_TEXT,
-        'CLOB'=>self::TYPE_TEXT,
-        'TEXT'=>self::TYPE_TEXT,
-        'BLOB'=>self::TYPE_BLOB,
-        'REAL'=>self::TYPE_REAL,
-        'FLOA'=>self::TYPE_REAL,
-        'DOUB'=>self::TYPE_REAL,
-    ];
-
-    const JOIN_INNER='INNER';
-    const JOIN_LEFT='LEFT';
-    const JOIN_LEFT_OUTER='LEFT OUTER';
-    const JOIN_RIGTH='RIGHT';
-    const JOIN_RIGTH_OUTER='RIGHT OUTER';
-    const JOIN_FULL='FULL';
-    const JOIN_FULL_OUTER='FULL OUTER';
-    const JOINS=[
-        self::JOIN_INNER,
-        self::JOIN_LEFT,
-        self::JOIN_LEFT_OUTER,
-        self::JOIN_RIGTH,
-        self::JOIN_RIGTH_OUTER,
-        self::JOIN_FULL,
-        self::JOIN_FULL_OUTER,
-    ];
-
-    const OR_ABORT='ABORT';
-    const OR_FAIL='FAIL';
-    const OR_IGNORE='IGNORE';
-    const OR_REPLACE='REPLACE';
-    const OR_ROLLBACK='ROLLBACK';
-
-    abstract public function version();
-
-    abstract public function timeout(int $sec): bool;
-
-    abstract protected function quoteVal(string $value): string;
-
-    abstract protected function quoteHex(string $value): string;
-
-	/**
-	 * @param string $sql
-	 * @param array|null $params
-	 * @return Result|null
-	 */
-    abstract public function query(string $sql, ?array $params=null): ?Result;
-
-    abstract public function lastInsertID();
-
-    abstract public function throwExceptions(bool $enable);
-
-    abstract public function lastError(): ?Exception;
-
-    /**
-     * @param string|SQL|SelfEscape $sql
+     * @param string|SQL $sql
      * @return SQL
      */
     public function sql($sql): SQL{
-        if(is_a($sql, SelfEscape::class)) return $sql->toSQLite($this);
         return new SQL($sql, $this);
     }
 
@@ -111,15 +24,13 @@ abstract class Manager{
         return '"'.str_replace('"', '""', $name).'"';
     }
 
-    const REGEXP_ESCAPED_NAMEPART='/^("(?:[^"]|"")+"|`(?:[^`]|``)+`|\'(?:[^\']|\'\')+\'|\[(?:[^\]])+\]|[^"`\'\[\.][^\.]*)(?:\.(.*))?$/';
-
     /**
      * @param string $name
      * @return string
      */
     public static function quoteNameParts(string $name): string{
         if($name==='*') return $name;
-        if(preg_match(static::REGEXP_ESCAPED_NAMEPART, $name, $m)){
+        if(preg_match('/^("(?:[^"]|"")+"|`(?:[^`]|``)+`|\'(?:[^\']|\'\')+\'|\[(?:[^\]])+\]|[^"`\'\[\.][^\.]*)(?:\.(.*))?$/', $name, $m)){
             $r=strval($m[1]);
             if($r[0]=='"'){}
             elseif($r[0]=='[') $r=self::quoteName(substr($r, 1, -1));
@@ -134,20 +45,19 @@ abstract class Manager{
 
     /**
      * Escapa el nombre o nombres indicados
-     * @param string|SQL|SelfEscape $name
+     * @param string|SQL $name
      * @param string|null $alias
      * @return SQL
      */
     public function name($name, ?string $alias=null): SQL{
         if(is_a($name, SQL::class)) $sql=$this->sql($name);
-        elseif(is_a($name, SelfEscape::class)) $sql=$name->toSQLite($this);
         else $sql=$this->sql(static::quoteNameParts($name));
         if($alias!==null) $sql->_as($alias);
         return $sql;
     }
 
     /**
-     * @param string|SQL|SelfEscape $name
+     * @param string|SQL $name
      * @param string|null $alias
      * @param false|string|null $indexedBy
      * @return SQL
@@ -161,8 +71,8 @@ abstract class Manager{
     }
 
     /**
-     * Escapa las lista de nombres o expresiones separados por comas por medio de {@see Manager::name()}
-     * @param array|string|SQL|SelfEscape $names Lista de nombres o expresiones. Si el indice es un string, se usa como alias
+     * Escapa las lista de nombres o expresiones separados por comas por medio de {@see \SQLiteMan::name()}
+     * @param array|string|SQL $names Lista de nombres o expresiones. Si el indice es un string, se usa como alias
      * @param bool $alias
      * @return SQL
      * @link https://www.sqlite.org/syntax/expr.html
@@ -186,20 +96,19 @@ abstract class Manager{
 
     /**
      * Escapa valores solo si son null|bool|int|float
-     * @param null|scalar|SelfEscape $value
+     * @param null|scalar $value
      * @return SQL|null
      */
     private function altEscape($value): ?SQL{
         if($value===null) return $this->sql('NULL');
         if(is_bool($value)) return $this->sql($value?'1':'0');
         if(is_int($value) || is_float($value)) return $this->sql(strval($value));
-        if(is_a($value, SelfEscape::class)) return $value->toSQLite($this);
         return null;
     }
 
     /**
      * Escapa valores. Escapa el texto como un valor hexadecimal si contiene el caracter NULL ("\0")
-     * @param null|scalar|SQL|SelfEscape $value
+     * @param null|scalar|SQL $value
      * @return SQL
      */
     public function value($value): SQL{
@@ -209,7 +118,7 @@ abstract class Manager{
 
     /**
      * Escapa valores. Elimina el caracter NULL ("\0") del texto
-     * @param null|scalar|SQL|SelfEscape $value
+     * @param null|scalar|SQL $value
      * @return SQL
      */
     public function value_text($value): SQL{
@@ -219,7 +128,7 @@ abstract class Manager{
 
     /**
      * Escapa valores. Escapa el texto como un valor hexadecimal
-     * @param null|scalar|SQL|SelfEscape $value
+     * @param null|scalar|SQL $value
      * @return SQL
      */
     public function value_hex($value): SQL{
@@ -228,7 +137,7 @@ abstract class Manager{
     }
 
     /**
-     * @param null|scalar|array|SQL|SelfEscape $values
+     * @param null|scalar|array|SQL $values
      * @return SQL
      */
     public function values($values): SQL{
@@ -295,7 +204,7 @@ abstract class Manager{
 
     /**
      * @param string $type
-     * @return string Uno de los valores de {@see Manager::TYPES}
+     * @return string Uno de los valores de {@see SQLiteMan::TYPES}
      */
     public static function typeColumnAffinity(string $type){
         if($type==='') return self::TYPE_BLOB;
@@ -314,7 +223,7 @@ abstract class Manager{
      * @param string $colName
      * @param array $colDef Propiedades esperadas:
      * <ul>
-     * <li>type: Tipo de dato de la columna. Lista de posibles valores: {@see Manager::TYPES}</li>
+     * <li>type: Tipo de dato de la columna. Lista de posibles valores: {@see \SQLiteMan::TYPES}</li>
      * <li>notnull: {bool} Indica si la columna no admite nulos</li>
      * <li>unique: {bool} Indica si los valores de la columna son únicos</li>
      * <li>default/defaultExpr: El valor o expresión por defecto</li>

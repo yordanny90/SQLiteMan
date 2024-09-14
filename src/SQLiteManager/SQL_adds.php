@@ -1,6 +1,6 @@
 <?php
 
-namespace SQLiteMan;
+namespace SQLiteManager;
 
 /**
  * #IMPORTANTE:
@@ -101,50 +101,50 @@ trait SQL_adds{
     }
 
     /**
-     * @param string|array|SQL|SelfEscape $name
-     * @param string|null $joinType Valores: {@see Manager::JOINS}
+     * @param string|array|SQL $name
+     * @param string|null $joinType Valores: {@see \SQLiteMan::JOINS}
      * @return SQL
      */
     public function &join($name, ?string $joinType=null){
-        if($joinType!==null && in_array(strtoupper($joinType), Manager::JOINS)) $this->_($joinType);
+        if($joinType!==null && in_array(strtoupper($joinType), \SQLiteMan::JOINS)) $this->_($joinType);
         return $this->_('JOIN')->_names($name, true);
     }
 
     /**
-     * @param string|array|SQL|SelfEscape $name
-     * @param string|null $joinType Valores: {@see Manager::JOINS}
+     * @param string|array|SQL $name
+     * @param string|null $joinType Valores: {@see \SQLiteMan::JOINS}
      * @return SQL
      */
     public function &natural_join($name, ?string $joinType=null){
         $this->_('NATURAL');
-        if($joinType!==null && in_array(strtoupper($joinType), Manager::JOINS)) $this->_($joinType);
+        if($joinType!==null && in_array(strtoupper($joinType), \SQLiteMan::JOINS)) $this->_($joinType);
         return $this->_('JOIN')->_names($name, true);
     }
 
     /**
-     * @param string|array|SQL|SelfEscape $name
+     * @param string|array|SQL $name
      * @param array $on
-     * @param string|null $joinType Valores: {@see Manager::JOINS}
+     * @param string|null $joinType Valores: {@see \SQLiteMan::JOINS}
      * @return SQL
      */
     public function &join_on($name, array $on, ?string $joinType=null){
-        if($joinType!==null && in_array(strtoupper($joinType), Manager::JOINS)) $this->_($joinType);
+        if($joinType!==null && in_array(strtoupper($joinType), \SQLiteMan::JOINS)) $this->_($joinType);
         return $this->_('JOIN')->_names($name, true)->_('ON')->_($this->man->on_($on));
     }
 
     /**
-     * @param string|array|SQL|SelfEscape $name
+     * @param string|array|SQL $name
      * @param array $using
-     * @param string|null $joinType Valores: {@see Manager::JOINS}
+     * @param string|null $joinType Valores: {@see \SQLiteMan::JOINS}
      * @return SQL
      */
     public function &join_using($name, array $using, ?string $joinType=null){
-        if($joinType!==null && in_array(strtoupper($joinType), Manager::JOINS)) $this->_($joinType);
+        if($joinType!==null && in_array(strtoupper($joinType), \SQLiteMan::JOINS)) $this->_($joinType);
         return $this->_('JOIN')->_names($name, true)->_('USING')->_parentheses($this->man->names($using, false));
     }
 
     /**
-     * @param string|array|SQL|SelfEscape $name
+     * @param string|array|SQL $name
      * @return SQL
      */
     public function &cross_join($name){

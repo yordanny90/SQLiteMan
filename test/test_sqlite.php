@@ -3,9 +3,9 @@
 
 $dir_class=__DIR__.'/../src';
 spl_autoload_register(function($class) use ($dir_class){
-	if($class=='SQLiteMan' || strpos($class, 'SQLiteMan\\')===0){
-		include $dir_class.'/'.$class.'.php';
-	}
+    if($class=='SQLiteMan' || strpos($class, 'SQLiteManager\\')===0){
+        include $dir_class.'/'.$class.'.php';
+    }
 });
 
 $db='test.db';
@@ -15,8 +15,14 @@ try{
     $m->fetchMode(PDO::FETCH_ASSOC);
     $m->timeout(5);
     $m->throwExceptions(true);
+	$schemas=$m->schemaList()->fetchColumnAllName('name');
+	echo "SCHEMAS:\n";
+	print_r($schemas);
+    $tables=$m->sql_tableList('test')->query()->fetchColumnAllName('name');
+	echo "TABLES test:\n";
+	print_r($tables);
     $m->query($sql=$m->sql_dropTable('test.chars'));
-	$m->query($sql=$m->sql_createTable('test.chars', [
+    $m->query($sql=$m->sql_createTable('test.chars', [
         'ID'=>[
             'type'=>SQLiteMan::TYPE_INTEGER,
             'pk'=>1,
@@ -62,15 +68,16 @@ try{
     foreach($res as $row){
         echo (json_encode($row)?:'#ERROR_JSON: '.$row['ord'].' '.$row['char']).PHP_EOL;
     }
-    $res=$m->query($sql=$m->sql_select('*', 'test.chars', [
+    $sql=$m->sql_select('*', 'test.chars', [
         $m->name("char")->cond_contains($m->sql(':c'))
-    ], null, null, null, null, 10), [':c'=>"(\00)"]);
+    ], null, null, null, null, 10);
+    $res=$sql->query([':c'=>"(\00)"]);
     echo $sql.PHP_EOL;
     foreach($res as $row){
         echo (json_encode($row)?:'#ERROR_JSON: '.$row['ord'].' '.$row['char']).PHP_EOL;
     }
 }catch(PDOException $err){
-    $e=\SQLiteMan\Exception::fromPDOException($err);
+    $e=\SQLiteManager\Exception::fromPDOException($err);
 }catch(Exception $err){
     $e=$err;
 }

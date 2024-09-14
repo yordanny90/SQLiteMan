@@ -1,6 +1,6 @@
 <?php
 
-namespace SQLiteMan;
+namespace SQLiteManager;
 
 /**
  * Repositorio {@link https://github.com/yordanny90/SQLiteMan}
@@ -13,13 +13,22 @@ class SQL{
      */
     protected $d='';
     /**
-     * @var Manager
+     * @var \SQLiteMan
      */
     protected $man;
     
-    public function __construct(string $data, Manager &$db){
+    public function __construct(string $data, \SQLiteMan &$db){
         $this->d=$data;
         $this->man=&$db;
+    }
+
+    /**
+     * Ejecuta esta sentencia SQL
+     * @param array|null $params Ver {@see \SQLiteMan::query()}
+     * @return Result|null
+     */
+    public function query(?array $params=null): ?Result{
+        return $this->man->query($this, $params);
     }
 
     public function &_parentheses(string $sql=''): self{
@@ -46,7 +55,7 @@ class SQL{
     }
 
     public function &_as(string $alias): self{
-        return $this->_('AS '.Manager::quoteName($alias));
+        return $this->_('AS '.\SQLiteMan::quoteName($alias));
     }
 
     public function &_concat($value): self{
@@ -61,7 +70,7 @@ class SQL{
     /**
      * @param $values
      * @return $this
-     * @see Manager::values()
+     * @see \SQLiteMan::values()
      */
     public function &_values($values): self{
         return $this->_($this->man->values($values));

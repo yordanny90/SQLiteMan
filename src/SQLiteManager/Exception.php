@@ -1,6 +1,6 @@
 <?php
 
-namespace SQLiteMan;
+namespace SQLiteManager;
 
 use Throwable;
 

@@ -1,6 +1,6 @@
 <?php
 
-namespace SQLiteMan;
+namespace SQLiteManager;
 
 use PDOStatement;
 
@@ -101,7 +101,17 @@ class Result implements \IteratorAggregate{
         return $this->res->fetchColumn($column);
     }
 
-    /**
+    public function fetchColumnAll(int $index){
+        return $this->res->fetchAll(\PDO::FETCH_COLUMN, $index);
+    }
+
+	public function fetchColumnAllName(string $name){
+		$index=$this->getColumnIndex($name);
+		if($index===null) return null;
+		return $this->res->fetchAll(\PDO::FETCH_COLUMN, $index);
+	}
+
+	/**
      * Ver {@see PDOStatement::fetchAll()}
      * @param int|null $mode
      * @param ...$fetchArgs
