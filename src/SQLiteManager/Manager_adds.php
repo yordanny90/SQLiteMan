@@ -407,22 +407,14 @@ trait Manager_adds{
         return $this->sql($sql);
     }
 
-    static $INSERT_UPDATE_OR_LIST=[
-        self::OR_ABORT,
-        self::OR_FAIL,
-        self::OR_IGNORE,
-        self::OR_REPLACE,
-        self::OR_ROLLBACK,
-    ];
-
     /**
      * @param string|SQL $table
-     * @param string|null $or Valores: {@see \SQLiteMan::$INSERT_UPDATE_OR_LIST}
+     * @param string|null $or Valores: {@see \SQLiteMan::INSERT_UPDATE_OR_LIST}
      * @return SQL
      */
     public function sql_insert_default($table, ?string $or=null): SQL{
         $sql="INSERT";
-        if(is_string($or) && in_array(strtoupper($or), static::$INSERT_UPDATE_OR_LIST)) $sql.=" OR ".$or;
+        if(is_string($or) && in_array(strtoupper($or), static::INSERT_UPDATE_OR_LIST)) $sql.=" OR ".$or;
         $sql.=" INTO ".$this->name($table)."\nDEFAULT VALUES";
         return $this->sql($sql);
     }
@@ -434,13 +426,13 @@ trait Manager_adds{
      *   "columnaA"=>"valorA",
      *   "columnaB"=>"valorB",
      * ]</code>
-     * @param string|null $or Valores: {@see \SQLiteMan::$INSERT_UPDATE_OR_LIST}
+     * @param string|null $or Valores: {@see \SQLiteMan::INSERT_UPDATE_OR_LIST}
      * @param SQL|null $upsert {@see \SQLiteMan::upsert_()}
      * @return SQL
      */
     public function sql_insert($table, array $data, ?string $or=null, ?SQL $upsert=null): SQL{
         $sql="INSERT";
-        if(is_string($or) && in_array(strtoupper($or), static::$INSERT_UPDATE_OR_LIST)) $sql.=" OR ".$or;
+        if(is_string($or) && in_array(strtoupper($or), static::INSERT_UPDATE_OR_LIST)) $sql.=" OR ".$or;
         $sql.=" INTO ".$this->name($table);
         $sql.="(".$this->names(array_keys($data), false).")";
         $sql.=" VALUES(".$this->values($data).")";
@@ -452,13 +444,13 @@ trait Manager_adds{
      * @param string|SQL $table
      * @param array|null $columns
      * @param SQL $select
-     * @param string|null $or Valores: {@see \SQLiteMan::$INSERT_UPDATE_OR_LIST}
+     * @param string|null $or Valores: {@see \SQLiteMan::INSERT_UPDATE_OR_LIST}
      * @param SQL|null $upsert {@see \SQLiteMan::upsert_()}
      * @return SQL
      */
     public function sql_insert_select($table, ?array $columns, SQL $select, ?string $or=null, ?SQL $upsert=null): SQL{
         $sql="INSERT";
-        if(is_string($or) && in_array(strtoupper($or), static::$INSERT_UPDATE_OR_LIST)) $sql.=" OR ".$or;
+        if(is_string($or) && in_array(strtoupper($or), static::INSERT_UPDATE_OR_LIST)) $sql.=" OR ".$or;
         $sql.=" INTO ".$this->name($table);
         if($columns!==null) $sql.=" (".$this->names($columns, false).")";
         $sql.="\n".$select;
@@ -468,7 +460,7 @@ trait Manager_adds{
 
     public function sql_update($table, array $data, $from, ?array $where, ?string $or=null): SQL{
         $sql="UPDATE";
-        if($or!==null && in_array(strtoupper($or), static::$INSERT_UPDATE_OR_LIST)) $sql.=" OR ".$or;
+        if($or!==null && in_array(strtoupper($or), static::INSERT_UPDATE_OR_LIST)) $sql.=" OR ".$or;
         $sql.=" ".$this->name($table)." SET ".$this->set_($data);
         if($from!==null) $sql.="\nFROM ".$this->names($from, true);
         if($where) $sql.="\nWHERE ".$this->whereAND_($where);

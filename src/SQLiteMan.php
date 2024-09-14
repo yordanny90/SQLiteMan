@@ -1,15 +1,14 @@
 <?php
 
-use SQLiteManager\Manager_base;
-use SQLiteManager\Manager_adds;
 use SQLiteManager\Result;
+use SQLiteManager\Exception;
 
 /**
  * Repositorio {@link https://github.com/yordanny90/SQLiteMan}
  */
 class SQLiteMan{
-	use Manager_base;
-	use Manager_adds;
+	use \SQLiteManager\Manager_base;
+	use \SQLiteManager\Manager_adds;
 
 	const SCHEMA_MAIN='main';
 	const SCHEMA_TEMP='temp';
@@ -74,8 +73,16 @@ class SQLiteMan{
 	const OR_IGNORE='IGNORE';
 	const OR_REPLACE='REPLACE';
 	const OR_ROLLBACK='ROLLBACK';
+	const INSERT_UPDATE_OR_LIST=[
+		self::OR_ABORT,
+		self::OR_FAIL,
+		self::OR_IGNORE,
+		self::OR_REPLACE,
+		self::OR_ROLLBACK,
+	];
 
-    /**
+
+	/**
      * @var PDO
      */
     protected $conn;
@@ -154,8 +161,8 @@ class SQLiteMan{
         $this->conn->setAttribute(PDO::ATTR_ERRMODE, $enable?PDO::ERRMODE_EXCEPTION:PDO::ERRMODE_SILENT);
     }
 
-    public function lastError(): ?\SQLiteManager\Exception{
-        return \SQLiteManager\Exception::fromPDOConn($this->conn);
+    public function lastError(): ?Exception{
+        return Exception::fromPDOConn($this->conn);
     }
 
     /**
