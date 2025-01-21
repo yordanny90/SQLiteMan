@@ -231,10 +231,6 @@ trait Manager_adds{
         return $this->sql('RETURNING')->_names($names, true);
     }
 
-    public function sql_functionList(): SQL{
-        return $this->sql('PRAGMA function_list');
-    }
-
     public function sql_indexList(?string $schema=null, ?string $table=null): SQL{
         if(is_string($schema)) $schema=$this->quoteName($schema).'.';
         $sql="SELECT `name`, `tbl_name` FROM ".$schema.static::$tbMaster.' WHERE '.$this->whereAND_(['type'=>"index"]);
@@ -257,12 +253,6 @@ trait Manager_adds{
     public function sql_viewList(?string $schema=null): SQL{
         if(is_string($schema)) $schema=$this->quoteName($schema).'.';
         $sql='SELECT `name` FROM '.$schema.self::$tbMaster.' WHERE '.$this->whereAND_(['type'=>"view"]);
-        return $this->sql($sql);
-    }
-
-    public function sql_tableInfo(string $table, ?string $schema=null): SQL{
-        if(is_string($schema)) $schema=$this->quoteName($schema).'.';
-        $sql='pragma '.$schema.'table_info('.$this->quoteName($table).')';
         return $this->sql($sql);
     }
 
