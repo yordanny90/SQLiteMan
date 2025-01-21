@@ -15,7 +15,7 @@ try{
     $m->fetchMode(PDO::FETCH_ASSOC);
     $m->timeout(5);
     $m->throwExceptions(true);
-	$schemas=$m->schemaList()->fetchColumnAllName('name');
+	$schemas=$m->database_list()->fetchColumnAllName('name');
 	echo "SCHEMAS:\n";
 	print_r($schemas);
     $tables=$m->sql_tableList('test')->query()->fetchColumnAllName('name');
