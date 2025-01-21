@@ -25,6 +25,21 @@ trait Manager_base{
     }
 
     /**
+     * Escapa varios nombres de tabla o columna y lo devuelve concatenados por puntos
+     * @param string|null ...$name
+     * @return string|null
+     */
+    public static function quoteNames(?string ...$name): ?string{
+        $r=[];
+        foreach($name AS $n){
+            if($n!==null) $r[]=self::quoteName($n);
+        }
+        if(count($r)===0) return null;
+        $r=implode('.', $r);
+        return $r;
+    }
+
+    /**
      * @param string $name
      * @return string
      */
@@ -185,9 +200,161 @@ trait Manager_base{
         return $sql;
     }
 
+    public function pragma_list(){
+        return $this->query('PRAGMA pragma_list');
+    }
+
+    public function database_list(){
+        return $this->query('PRAGMA database_list');
+    }
+
+    public function function_list(){
+        return $this->query('PRAGMA function_list');
+    }
+
+    public function shrink_memory(){
+        $sql='PRAGMA shrink_memory';
+        return $this->query($sql);
+    }
+
+    public function query_only(?bool $val=null){
+        $sql='PRAGMA query_only';
+        if($val!==null) $sql.='='.$this->value($val);
+        return $this->query($sql);
+    }
+
+    public function table_info(string $table=null, ?string $schema=null){
+        $sql='PRAGMA '.self::quoteNames($schema, 'table_info').'('.self::quoteName($table).')';
+        return $this->query($sql);
+    }
+
+    public function table_xinfo(string $table=null, ?string $schema=null){
+        $sql='PRAGMA '.self::quoteNames($schema, 'table_xinfo').'('.self::quoteName($table).')';
+        return $this->query($sql);
+    }
+
+    public function index_info(string $index=null, ?string $schema=null){
+        $sql='PRAGMA '.self::quoteNames($schema, 'index_info').'('.self::quoteName($index).')';
+        return $this->query($sql);
+    }
+
+    public function index_xinfo(string $index=null, ?string $schema=null){
+        $sql='PRAGMA '.self::quoteNames($schema, 'index_xinfo').'('.self::quoteName($index).')';
+        return $this->query($sql);
+    }
+
+    /**
+     * @param string|null $val 0 | OFF | 1 | NORMAL | 2 | FULL | 3 | EXTRA
+     * @param string|null $schema
+     * @return Result|null
+     */
+    public function synchronous(?string $val=null, ?string $schema=null){
+        $sql='PRAGMA '.self::quoteNames($schema, 'synchronous');
+        if($val!==null) $sql.='='.$this->value($val);
+        return $this->query($sql);
+    }
+
+    /**
+     * @param string|null $val DELETE | TRUNCATE | PERSIST | MEMORY | WAL | OFF
+     * @param string|null $schema
+     * @return Result|null
+     */
+    public function journal_mode(?string $val=null, ?string $schema=null){
+        $sql='PRAGMA '.self::quoteNames($schema, 'journal_mode');
+        if($val!==null) $sql.='='.$this->value($val);
+        return $this->query($sql);
+    }
+
+    public function journal_size_limit(?int $val=null, ?string $schema=null){
+        $sql='PRAGMA '.self::quoteNames($schema, 'journal_size_limit');
+        if($val!==null) $sql.='='.$this->value($val);
+        return $this->query($sql);
+    }
+
+    /**
+     * @param string|null $val NORMAL | EXCLUSIVE
+     * @param string|null $schema
+     * @return Result|null
+     */
+    public function locking_mode(?string $val=null, ?string $schema=null){
+        $sql='PRAGMA '.self::quoteNames($schema, 'locking_mode');
+        if($val!==null) $sql.='='.$this->value($val);
+        return $this->query($sql);
+    }
+
+    /**
+     * @param int|null $val
+     * @return Result|null
+     */
+    public function wal_autocheckpoint(?int $val=null){
+        $sql='PRAGMA wal_autocheckpoint';
+        if($val!==null) $sql.='='.$this->value($val);
+        return $this->query($sql);
+    }
+
+    /**
+     * @param string|null $val PASSIVE | FULL | RESTART | TRUNCATE
+     * @param string|null $schema
+     * @return Result|null
+     */
+    public function wal_checkpoint(?string $val=null, ?string $schema=null){
+        $sql='PRAGMA '.self::quoteNames($schema, 'wal_checkpoint');
+        if($val!==null) $sql.='('.$this->value($val).')';
+        return $this->query($sql);
+    }
+
+    public function user_version(?int $val=null, ?string $schema=null){
+        $sql='PRAGMA '.self::quoteNames($schema, 'user_version');
+        if($val!==null) $sql.='='.$this->value($val);
+        return $this->query($sql);
+    }
+
+    public function application_id(?int $val=null, ?string $schema=null){
+        $sql='PRAGMA '.self::quoteNames($schema, 'application_id');
+        if($val!==null) $sql.='='.$this->value($val);
+        return $this->query($sql);
+    }
+
+    public function page_size(?int $val=null, ?string $schema=null){
+        $sql='PRAGMA '.self::quoteNames($schema, 'page_size');
+        if($val!==null) $sql.='='.$this->value($val);
+        return $this->query($sql);
+    }
+
+    public function page_count(?string $schema=null){
+        $sql='PRAGMA '.self::quoteNames($schema, 'page_count');
+        return $this->query($sql);
+    }
+
+    public function freelist_count(?string $schema=null){
+        $sql='PRAGMA '.self::quoteNames($schema, 'freelist_count');
+        return $this->query($sql);
+    }
+
+    /**
+     * @param string|null $val 0 | NONE | 1 | FULL | 2 | INCREMENTAL
+     * @param string|null $schema
+     * @return Result|null
+     */
+    public function auto_vacuum(?string $val=null, ?string $schema=null){
+        $sql='PRAGMA '.self::quoteNames($schema, 'auto_vacuum');
+        if($val!==null) $sql.='='.$this->value($val);
+        return $this->query($sql);
+    }
+
+    /**
+     * @param int|null $val
+     * @param string|null $schema
+     * @return Result|null
+     */
+    public function incremental_vacuum(?int $val=null, ?string $schema=null){
+        $sql='PRAGMA '.self::quoteNames($schema, 'incremental_vacuum');
+        if($val!==null) $sql.='('.$this->value($val).')';
+        return $this->query($sql);
+    }
+
     public function vacuum(?string $schema=null, ?string $toFile=null){
-        $sql='VACUUM';
-        if(is_string($schema)) $sql.=' '.$this->quoteName($schema);
+        $sql='VACUUM '.$this->quoteNames($schema);
         if(is_string($toFile)) $sql.=' INTO '.$this->value($toFile);
         return $this->query($sql);
     }
@@ -249,10 +416,6 @@ trait Manager_base{
         return $def;
     }
 
-    public function schemaList(){
-        return $this->query('PRAGMA database_list');
-    }
-
     /**
      * # Esta función es experimental:
      * ## Su comportamiento y resultados pueden cambiar en futuras versiones
@@ -270,7 +433,7 @@ trait Manager_base{
      * @return array|false
      */
     public function detectColumnDiff($table, array $columns){
-        $defs=$this->query($this->sql_tableInfo($table));
+        $defs=$this->table_info($table);
         if(!$defs) return false;
         $drop=[];
         $change=[];
